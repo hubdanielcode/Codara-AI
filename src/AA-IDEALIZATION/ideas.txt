@@ -1,0 +1,3 @@
+LISTA DE PROCESSOS
+
+3. fazer a sidebar de sessão com historico, foto, etc
