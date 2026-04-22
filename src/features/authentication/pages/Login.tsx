@@ -11,8 +11,8 @@ const Login = () => {
   /* - Estados do Usuário - */
 
   const { email, setEmail } = useAuthenticationContext();
-
   const [password, setPassword] = useState<string>("");
+  const [rememberMe, setRememberMe] = useState<boolean>(false);
 
   /* - Estados de Erro - */
 
@@ -20,6 +20,8 @@ const Login = () => {
   const [signInSuccess, setSignInSuccess] = useState<string>("");
 
   const navigate = useNavigate();
+
+  /* - Funções - */
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -44,10 +46,27 @@ const Login = () => {
         throw error;
       }
 
+      if (!rememberMe) {
+        window.addEventListener("beforeunload", () => supabase.auth.signOut());
+      }
+
       setSignInSuccess("Login realizado com sucesso!");
       navigate("/pagina-principal");
     } catch (error) {
       setSignInError("Email ou senha incorretos.");
+    }
+  };
+
+  const signInWithGithub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: "http://localhost:5173/pagina-principal",
+      },
+    });
+
+    if (error) {
+      console.error(error.message);
     }
   };
 
@@ -129,6 +148,8 @@ const Login = () => {
                 <input
                   className="mr-2 mt-1 border-zinc-700 cursor-pointer"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                 />
                 Lembrar-me
               </label>
@@ -169,6 +190,7 @@ const Login = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             type="submit"
+            onClick={() => signInWithGithub()}
           >
             <FaGithub className="h-5 w-5" />
             Github

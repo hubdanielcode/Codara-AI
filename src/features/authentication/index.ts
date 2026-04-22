@@ -8,3 +8,7 @@ export { ProtectedRoute } from "./pages/ProtectedRoute";
 /* - Types - */
 
 export type { User } from "./types/user";
+
+/* - Hooks - */
+
+export { useAuthenticationContext } from "./hooks/useAuthenticationContext";

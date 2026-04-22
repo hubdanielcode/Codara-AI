@@ -1,3 +1,4 @@
+import { supabase } from "@/supabase/supabase";
 import { createContext, useState, type ReactNode } from "react";
 
 export interface CodeReviewContextType {
@@ -14,7 +15,7 @@ export interface CodeReviewContextType {
 
   /* - Funções - */
 
-  analyzeCode: (code: string) => Promise<void>;
+  analyzeCode: (code: string, chatId: string) => Promise<void>;
 }
 
 const CodeReviewContext = createContext<CodeReviewContextType | null>(null);
@@ -29,7 +30,7 @@ const CodeReviewProvider = ({ children }: { children: ReactNode }) => {
 
   /* - Funções - */
 
-  const analyzeCode = async (code: string) => {
+  const analyzeCode = async (code: string, chatId: string) => {
     setError([]);
     setSuggestion([]);
     setImprovement([]);
@@ -78,18 +79,32 @@ ${code}`,
     const text = data.choices[0].message.content;
     const parsed = JSON.parse(text);
 
-    console.log("Parsed:", parsed);
-
     setError(parsed.errors ?? []);
     setSuggestion(parsed.suggestions ?? []);
     setImprovement(parsed.improvements ?? []);
     setCorrectedCode(parsed.correctedCode ?? "");
+
+    await supabase.from("messages").insert({
+      chat_id: chatId,
+      content: code,
+      role: "user",
+    });
+
+    await supabase.from("messages").insert({
+      chat_id: chatId,
+      content: parsed.correctedCode,
+      role: "admin",
+      errors: parsed.errors ?? [],
+      suggestions: parsed.suggestions ?? [],
+      improvements: parsed.improvements ?? [],
+    });
   };
 
   return (
     <CodeReviewContext.Provider
       value={{
         /* - Dados do código - */
+
         error,
         setError,
         improvement,

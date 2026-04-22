@@ -12,22 +12,33 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase/supabase";
 import { AuthenticationProvider } from "./features/authentication/context/AuthenticationContext";
 import { CodeReviewProvider } from "./features/code-review/context/CodeReviewContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChatProvider } from "./features/code-review/context/ChatContext";
+import { MessageProvider } from "./features/code-review/context/MessageContext";
+import { ThemeProvider } from "./shared/context/ThemeContext";
+import { useThemeContext } from "./shared/hooks/useThemeContext";
 
 const AppLayout = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
+  const { theme } = useThemeContext();
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950">
+    <div
+      className={`min-h-screen flex flex-col ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+    >
       <Header openSideBar={() => setIsSideBarOpen(!isSideBarOpen)} />
 
       <main className="flex flex-1">
-        {isSideBarOpen && (
-          <div className="flex flex-1 bg-zinc-900 text-white">
-            <SideBar />
-          </div>
-        )}
-
-        <Outlet />
+        <AnimatePresence>{isSideBarOpen && <SideBar />}</AnimatePresence>
+        <motion.div
+          className="flex flex-1"
+          initial={{ x: 0 }}
+          exit={{ x: 0 }}
+          animate={{ x: 20 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Outlet />
+        </motion.div>
       </main>
 
       <Footer />
@@ -79,48 +90,54 @@ const App = () => {
   return (
     <div className="select-none h-full">
       <AuthenticationProvider session={session}>
-        <CodeReviewProvider>
-          <Routes>
-            {/* - Rota de Login - */}
+        <ThemeProvider>
+          <CodeReviewProvider>
+            <ChatProvider>
+              <MessageProvider>
+                <Routes>
+                  {/* - Rota de Login - */}
 
-            <Route
-              path="/"
-              element={<Login />}
-            />
+                  <Route
+                    path="/"
+                    element={<Login />}
+                  />
 
-            {/* - Rota de Cadastro - */}
+                  {/* - Rota de Cadastro - */}
 
-            <Route
-              path="/cadastro"
-              element={<Authentication />}
-            />
+                  <Route
+                    path="/cadastro"
+                    element={<Authentication />}
+                  />
 
-            {/* - Rota de Recuperação de Senha - */}
+                  {/* - Rota de Recuperação de Senha - */}
 
-            <Route
-              path="/recuperar-senha"
-              element={<RecoverPassword />}
-            />
+                  <Route
+                    path="/recuperar-senha"
+                    element={<RecoverPassword />}
+                  />
 
-            {/* - Rota de Erro - */}
+                  {/* - Rota de Erro - */}
 
-            <Route
-              path="*"
-              element={<Missing />}
-            />
+                  <Route
+                    path="*"
+                    element={<Missing />}
+                  />
 
-            {/* - Rota do Layout Principal: Protegida !! - */}
+                  {/* - Rota do Layout Principal: Protegida !! - */}
 
-            <Route element={<ProtectedRoute session={session} />}>
-              <Route element={<AppLayout />}>
-                <Route
-                  path="/pagina-principal"
-                  element={<MainPage />}
-                />
-              </Route>
-            </Route>
-          </Routes>
-        </CodeReviewProvider>
+                  <Route element={<ProtectedRoute session={session} />}>
+                    <Route element={<AppLayout />}>
+                      <Route
+                        path="/pagina-principal"
+                        element={<MainPage />}
+                      />
+                    </Route>
+                  </Route>
+                </Routes>
+              </MessageProvider>
+            </ChatProvider>
+          </CodeReviewProvider>
+        </ThemeProvider>
       </AuthenticationProvider>
     </div>
   );

@@ -1,3 +1,14 @@
 LISTA DE PROCESSOS
 
-3. fazer a sidebar de sessão com historico, foto, etc
+=> sidebar
+
+- O que eu preciso?
+
+. fazer o histórico de correções daquele chat. (?)
+
+Como fazer?
+
+Passo 1: Descobrir qual chat o usuário está mostrando quando clicar no histórico de correções daquele chat.
+Passo 2: Pegar o histórico daquele chat (pelo chad_id) do banco de dados e exibir no componente
+
+

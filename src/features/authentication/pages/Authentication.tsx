@@ -194,14 +194,14 @@ const Authentication = () => {
                 />
 
                 <span>
-                  Concordo com os
+                  Concordo com os{" "}
                   <Link
                     className="text-blue-500 hover:text-blue-400 font-semibold"
                     to="/termos-de-uso"
                   >
-                    Termos de Uso
+                    Termos de Uso{" "}
                   </Link>
-                  e
+                  e{" "}
                   <Link
                     className="text-blue-500 hover:text-blue-400 font-semibold"
                     to="/políticas-de-privacidade"
@@ -257,7 +257,7 @@ const Authentication = () => {
           </motion.div>
 
           <p className="text-center text-sm text-zinc-400 mt-6">
-            Já possui uma conta?
+            Já possui uma conta?{" "}
             <Link
               className="text-blue-500 hover:text-blue-400 transition-colors font-semibold"
               to="/"

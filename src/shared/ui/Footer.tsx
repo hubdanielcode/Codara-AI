@@ -1,11 +1,27 @@
+import { useThemeContext } from "@/shared/hooks/useThemeContext";
+
 const Footer = () => {
+  const { theme } = useThemeContext();
+
   return (
-    <div className="bg-zinc-800 border-t border-zinc-700 px-4 py-3 flex items-center justify-center">
-      <span className="text-white text-sm">
-        © {new Date().getFullYear()} <strong>Coldara AI</strong> Todos os
-        direitos reservados.
+    <div
+      className={`px-4 py-3 flex items-center justify-center border-t ${
+        theme === "Dark"
+          ? "bg-zinc-800 border-zinc-700"
+          : "bg-white border-stone-200"
+      }`}
+    >
+      <span
+        className={`text-sm ${theme === "Dark" ? "text-white" : "text-black"}`}
+      >
+        © {new Date().getFullYear()}{" "}
+        <strong className={theme === "Dark" ? "text-white" : "text-black"}>
+          Codara AI
+        </strong>
+        Todos os direitos reservados.
       </span>
     </div>
   );
 };
+
 export { Footer };

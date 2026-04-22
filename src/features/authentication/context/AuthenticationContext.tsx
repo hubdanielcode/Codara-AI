@@ -9,6 +9,10 @@ export interface AuthenticationContextType {
   setName: (name: string) => void;
   email: string;
   setEmail: (email: string) => void;
+  photo: File | null;
+  setPhoto: (photo: File | null) => void;
+  userId: string | null;
+  setUserId: (userId: string) => void;
 
   /* - Funções - */
 
@@ -30,17 +34,21 @@ const AuthenticationProvider = ({
 
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [userId, setUserId] = useState<string | null>(session?.user.id ?? null);
 
   /* - Pegando o nome do usuário logado - */
 
   useEffect(() => {
     const fetchActualUser = async () => {
-      if (!session) {
-        return;
-      }
-      const data = await getUsers(session.user.id);
+      if (!session) return;
 
-      setName(data.name);
+      try {
+        const data = await getUsers(session.user.id);
+        setName(data.name);
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      }
     };
     fetchActualUser();
   }, [session]);
@@ -61,6 +69,10 @@ const AuthenticationProvider = ({
         setName,
         email,
         setEmail,
+        photo,
+        setPhoto,
+        userId,
+        setUserId,
 
         /* - Funções - */
 
