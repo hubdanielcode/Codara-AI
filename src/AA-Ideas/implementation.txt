@@ -1,14 +1,14 @@
 LISTA DE PROCESSOS
 
-=> sidebar
+=> SIDEBAR
 
 - O que eu preciso?
 
-. fazer o histórico de correções daquele chat. (?)
+. Fazer o histórico de correções daquele chat (?)
+. Criar Termos de uso e política de privacidade (e colocar o tema)
+. Fazer o navigate baseado na página anterior
 
-Como fazer?
+PARA O HISTÓRICO:
 
 Passo 1: Descobrir qual chat o usuário está mostrando quando clicar no histórico de correções daquele chat.
 Passo 2: Pegar o histórico daquele chat (pelo chad_id) do banco de dados e exibir no componente
-
-

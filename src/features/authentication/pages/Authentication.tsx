@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Code2, Lock, Mail, User } from "lucide-react";
-import { useState } from "react";
-import { FaGithub } from "react-icons/fa";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuthenticationContext } from "../hooks/useAuthenticationContext";
 import { regex, masks } from "@/shared";
@@ -59,6 +58,23 @@ const Authentication = () => {
     setSignUpError("");
     navigate("/");
   };
+
+  /* - Criando a referência para fechar o erro ao clicar fora - */
+
+  const signUpRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!signUpRef.current) return;
+
+      if (!signUpRef.current.contains(e.target as Node)) {
+        setSignUpError("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="flex justify-center items-center p-4 bg-zinc-950 min-h-screen">
@@ -213,36 +229,15 @@ const Authentication = () => {
             </div>
 
             <motion.button
-              className="flex justify-center items-center w-full bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer"
+              className="flex justify-center items-center w-full bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer mb-6"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="submit"
+              ref={signUpRef}
             >
               Criar Conta
             </motion.button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-800"></div>
-            </div>
-
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-zinc-900 text-zinc-500">
-                ou continue com
-              </span>
-            </div>
-          </div>
-
-          <motion.button
-            className="flex justify-center items-center w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer gap-2 border border-zinc-700 mb-8"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            type="submit"
-          >
-            <FaGithub className="h-5 w-5" />
-            Github
-          </motion.button>
 
           <motion.div
             className="min-h-12"
@@ -250,7 +245,7 @@ const Authentication = () => {
             whileTap={{ scale: 0.95 }}
           >
             {signUpError && (
-              <p className="flex items-center justify-center h-12 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm font-semibold px-4 py-3 text-center ">
+              <p className="flex items-center justify-center h-12 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm font-semibold px-4 py-3 text-center">
                 {signUpError}
               </p>
             )}

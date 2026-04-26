@@ -1,12 +1,12 @@
-import type { Message } from "../types/message";
 import { supabase } from "@/supabase/supabase";
+import type { Patch } from "../types/patch";
 
-/* - C.R.U.D de mensagens - */
+/* - C.R.U.D do histórico de correções - */
 
 // 1. Create
 
-const createMessage = async (
-  newMessage: Omit<Message, "id" | "created_at">,
+const createPatch = async (
+  patch: Omit<Patch, "id" | "created_at" | "updated_at">,
 ) => {
   const {
     data: { user },
@@ -17,13 +17,12 @@ const createMessage = async (
   }
 
   const { data, error } = await supabase
-    .from("messages")
-    .insert([newMessage])
-    .select()
-    .single();
+    .from("patches")
+    .insert([patch])
+    .select();
 
   if (error) {
-    throw new Error("Erro ao enviar mensagem!");
+    throw new Error("Erro ao criar update!");
   }
 
   return data;
@@ -31,7 +30,7 @@ const createMessage = async (
 
 // 2. Read
 
-const getMessages = async (chat_id: string) => {
+const getPatches = async (chatId: string) => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -41,12 +40,14 @@ const getMessages = async (chat_id: string) => {
   }
 
   const { data, error } = await supabase
-    .from("messages")
+    .from("patches")
     .select("*")
-    .eq("chat_id", chat_id);
+    .eq("chat_id", chatId)
+
+    .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error("Erro ao enviar mensagem!");
+    throw new Error("Erro ao retornar updates deste chat!");
   }
 
   return data;
@@ -54,9 +55,9 @@ const getMessages = async (chat_id: string) => {
 
 // 3. Update
 
-const updateMessages = async (
+const updatePatch = async (
   id: string,
-  updates: Partial<Omit<Message, "id" | "created_at">>,
+  updates: Partial<Omit<Patch, "id" | "created_at" | "updated_at">>,
 ) => {
   const {
     data: { user },
@@ -67,15 +68,15 @@ const updateMessages = async (
   }
 
   const { data, error } = await supabase
-    .from("messages")
+    .from("patches")
     .update(updates)
     .eq("id", id)
-    .select()
+    .select("*")
     .single();
 
   if (error) {
     throw new Error(
-      "Erro ao atualizar mensagens! Id necessário para a atualização!",
+      "Erro ao atualizar lista de correções deste chat! Id necessário para a atualização",
     );
   }
 
@@ -84,7 +85,7 @@ const updateMessages = async (
 
 // 4. Delete
 
-const deleteMessages = async (id: string) => {
+const deletePatch = async (id: string) => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -94,17 +95,19 @@ const deleteMessages = async (id: string) => {
   }
 
   const { data, error } = await supabase
-    .from("messages")
+    .from("patches")
     .delete()
     .eq("id", id)
-    .select()
+    .select("*")
     .single();
 
   if (error) {
-    throw new Error("Erro ao deletar mensagens! Id necessário para a deleção!");
+    throw new Error(
+      "Erro ao deletar lista de correções deste chat! Id necessário para a deleção",
+    );
   }
 
   return data;
 };
 
-export { createMessage, getMessages, updateMessages, deleteMessages };
+export { createPatch, getPatches, updatePatch, deletePatch };

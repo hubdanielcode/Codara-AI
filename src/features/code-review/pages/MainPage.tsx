@@ -17,9 +17,10 @@ import {
   updateChat,
 } from "@/features/code-review/service/ChatService";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
+import { generateChatTitle } from "../service/CodeReviewService";
 
 const MainPage = () => {
-  /* - Puxando do Context - */
+  /* - Puxando do context - */
 
   const {
     error,
@@ -37,58 +38,37 @@ const MainPage = () => {
   const { selectedChatId, setSelectedChatId, fetchChats } = useChatContext();
   const { theme } = useThemeContext();
 
-  /* - Estados do Código - */
+  /* - Estados do código - */
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean | null>(null);
   const [code, setCode] = useState<string>("");
-  const [isNewChat, setIsNewChat] = useState<boolean>(false);
 
   /* - Funções - */
 
   const handleAnalyze = async (code: string) => {
-    let chatId = selectedChatId;
-
     if (!code.trim()) return;
 
-    if (!chatId) {
-      const newChat = await createChat({ title: "Novo Bate-Papo" });
-      setIsNewChat(true);
-      setSelectedChatId(newChat.id);
-      chatId = newChat.id;
-    }
+    let chatId = selectedChatId;
+    const isNewChat = !selectedChatId;
 
     setIsAnalyzing(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!chatId) {
+        const newChat = await createChat({ title: "Novo Bate-Papo" });
+        chatId = newChat.id;
+      }
+
       await analyzeCode(code, chatId!);
 
-      const response = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              {
-                role: "user",
-                content: `Gere um título curto (máximo 4 palavras) para uma conversa sobre esse código. Retorne APENAS o título, sem aspas, sem pontuação.\n\n${code}`,
-              },
-            ],
-          }),
-        },
-      );
-
-      const data = await response.json();
-      const title = data.choices[0].message.content.trim();
-      await updateChat(chatId!, { title });
-      fetchChats();
+      if (isNewChat) {
+        const title = await generateChatTitle(code);
+        await updateChat(chatId!, { title });
+        fetchChats();
+        setSelectedChatId(chatId);
+      }
     } catch (error) {
-      console.log("Erro ao ler seu código:", error);
+      console.log("Não foi possível ler o código:", error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -99,11 +79,6 @@ const MainPage = () => {
   useEffect(() => {
     const getChatData = async () => {
       if (!selectedChatId) return;
-
-      if (isNewChat) {
-        setIsNewChat(false);
-        return;
-      }
 
       setError([]);
       setSuggestion([]);
@@ -223,7 +198,7 @@ const MainPage = () => {
             </div>
 
             <motion.div className="flex flex-col flex-1 space-y-2">
-              {/* - Mensagem de 'Analisando' - */}
+              {/* - feedback de que está analisando - */}
 
               {isAnalyzing && (
                 <p
@@ -353,7 +328,7 @@ const MainPage = () => {
 
               {!isAnalyzing && correctedCode && (
                 <motion.div
-                  className={`rounded-lg mt-6 max-w-[94%] ${theme === "Dark" ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
+                  className={`flex flex-1 rounded-lg my-6 max-w-[94%] ${theme === "Dark" ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
                   initial={{ y: 150, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.7 }}
@@ -367,7 +342,7 @@ const MainPage = () => {
                       </span>
 
                       <motion.button
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto h-10"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleCopy}
@@ -378,7 +353,7 @@ const MainPage = () => {
                     </div>
 
                     <textarea
-                      className={`w-full h-35 rounded-lg resize-none my-4 p-4 text-lg focus:outline-none ${theme === "Dark" ? "bg-black text-white placeholder:text-zinc-300" : "bg-stone-50 text-stone-800 placeholder:text-stone-400 border border-stone-200"}`}
+                      className={`w-full h-full rounded-lg resize-none my-4 p-4 text-lg focus:outline-none ${theme === "Dark" ? "bg-black text-white placeholder:text-zinc-300" : "bg-stone-50 text-stone-800 placeholder:text-stone-400 border border-stone-200"}`}
                       value={correctedCode}
                       readOnly
                     />

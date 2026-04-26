@@ -1,4 +1,4 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useEffect, useState, type ReactNode } from "react";
 import { applyTheme, getTheme, saveTheme, type Theme } from "../utils/theme";
 
 interface ThemeContextType {
@@ -18,6 +18,12 @@ const ThemeProvider = ({ children }: { children: ReactNode }) => {
     saveTheme(newTheme);
     applyTheme(newTheme);
   };
+
+  /* - Aplicando o tema na scrollbar padrão do navegador - */
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "Dark");
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

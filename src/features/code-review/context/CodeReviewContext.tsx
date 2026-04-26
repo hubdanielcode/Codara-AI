@@ -1,5 +1,5 @@
-import { supabase } from "@/supabase/supabase";
 import { createContext, useState, type ReactNode } from "react";
+import { analyzeCode as analyzeCodeService } from "../service/CodeReviewService";
 
 export interface CodeReviewContextType {
   /* - Dados do código - */
@@ -36,68 +36,12 @@ const CodeReviewProvider = ({ children }: { children: ReactNode }) => {
     setImprovement([]);
     setCorrectedCode("");
 
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "user",
-              content: `Você é um revisor de código. Analise o código abaixo e retorne APENAS um JSON válido, sem markdown, sem blocos de código, sem texto extra.
-
-Estrutura obrigatória:
-{
-  "errors": ["string com erro encontrado"],
-  "suggestions": ["string com sugestão"],
-  "improvements": ["string com melhoria"],
-  "correctedCode": "código corrigido aqui como string"
-}
-
-O correctedCode é OBRIGATÓRIO e deve sempre conter o código original com todas as correções aplicadas, mesmo que o código esteja correto.
-
-O correctedCode deve preservar todas as quebras de linha e indentação do código original, usando \n para cada nova linha.
-
-Código para analisar:
-${code}`,
-            },
-          ],
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`Erro: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.choices[0].message.content;
-    const parsed = JSON.parse(text);
+    const parsed = await analyzeCodeService(code, chatId);
 
     setError(parsed.errors ?? []);
     setSuggestion(parsed.suggestions ?? []);
     setImprovement(parsed.improvements ?? []);
-    setCorrectedCode(parsed.correctedCode ?? "");
-
-    await supabase.from("messages").insert({
-      chat_id: chatId,
-      content: code,
-      role: "user",
-    });
-
-    await supabase.from("messages").insert({
-      chat_id: chatId,
-      content: parsed.correctedCode,
-      role: "admin",
-      errors: parsed.errors ?? [],
-      suggestions: parsed.suggestions ?? [],
-      improvements: parsed.improvements ?? [],
-    });
+    setCorrectedCode(parsed.corrected_code ?? "");
   };
 
   return (

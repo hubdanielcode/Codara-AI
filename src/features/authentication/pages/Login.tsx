@@ -3,7 +3,7 @@ import { Code2, Mail, Lock } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
 import { Link, useNavigate } from "react-router";
 import { useAuthenticationContext } from "../hooks/useAuthenticationContext";
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { masks, regex } from "@/shared";
 import { supabase } from "@/supabase/supabase";
 
@@ -17,7 +17,6 @@ const Login = () => {
   /* - Estados de Erro - */
 
   const [signInError, setSignInError] = useState<string>("");
-  const [signInSuccess, setSignInSuccess] = useState<string>("");
 
   const navigate = useNavigate();
 
@@ -50,7 +49,6 @@ const Login = () => {
         window.addEventListener("beforeunload", () => supabase.auth.signOut());
       }
 
-      setSignInSuccess("Login realizado com sucesso!");
       navigate("/pagina-principal");
     } catch (error) {
       setSignInError("Email ou senha incorretos.");
@@ -69,6 +67,22 @@ const Login = () => {
       console.error(error.message);
     }
   };
+
+  /* - Criando a referência para fechar o erro ao clicar fora - */
+
+  const signInRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!signInRef.current) return;
+
+      if (!signInRef.current.contains(e.target as Node)) {
+        setSignInError("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="flex justify-center items-center p-4 bg-zinc-950 min-h-screen">
@@ -167,6 +181,7 @@ const Login = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="button"
+              ref={signInRef}
               onClick={handleLogin}
             >
               Entrar
@@ -204,11 +219,6 @@ const Login = () => {
             {signInError && (
               <p className="flex items-center justify-center h-12 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm font-semibold px-4 py-3 text-center">
                 {signInError}
-              </p>
-            )}
-            {signInSuccess && (
-              <p className="flex items-center justify-center h-12 rounded-lg bg-green-100 border border-green-300 text-green-700 text-sm font-semibold px-4 py-3 text-center">
-                {signInSuccess}
               </p>
             )}
           </motion.div>

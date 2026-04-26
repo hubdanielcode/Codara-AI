@@ -10,13 +10,9 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { MainPage } from "./features/code-review/pages/MainPage";
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase/supabase";
-import { AuthenticationProvider } from "./features/authentication/context/AuthenticationContext";
-import { CodeReviewProvider } from "./features/code-review/context/CodeReviewContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChatProvider } from "./features/code-review/context/ChatContext";
-import { MessageProvider } from "./features/code-review/context/MessageContext";
-import { ThemeProvider } from "./shared/context/ThemeContext";
 import { useThemeContext } from "./shared/hooks/useThemeContext";
+import { AppProviders } from "./shared/providers/AppProviders";
 
 const AppLayout = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
@@ -89,56 +85,48 @@ const App = () => {
   }
   return (
     <div className="select-none h-full">
-      <AuthenticationProvider session={session}>
-        <ThemeProvider>
-          <CodeReviewProvider>
-            <ChatProvider>
-              <MessageProvider>
-                <Routes>
-                  {/* - Rota de Login - */}
+      <AppProviders session={session}>
+        <Routes>
+          {/* - Rota de Login - */}
 
-                  <Route
-                    path="/"
-                    element={<Login />}
-                  />
+          <Route
+            path="/"
+            element={<Login />}
+          />
 
-                  {/* - Rota de Cadastro - */}
+          {/* - Rota de Cadastro - */}
 
-                  <Route
-                    path="/cadastro"
-                    element={<Authentication />}
-                  />
+          <Route
+            path="/cadastro"
+            element={<Authentication />}
+          />
 
-                  {/* - Rota de Recuperação de Senha - */}
+          {/* - Rota de Recuperação de Senha - */}
 
-                  <Route
-                    path="/recuperar-senha"
-                    element={<RecoverPassword />}
-                  />
+          <Route
+            path="/recuperar-senha"
+            element={<RecoverPassword />}
+          />
 
-                  {/* - Rota de Erro - */}
+          {/* - Rota de Erro - */}
 
-                  <Route
-                    path="*"
-                    element={<Missing />}
-                  />
+          <Route
+            path="*"
+            element={<Missing />}
+          />
 
-                  {/* - Rota do Layout Principal: Protegida !! - */}
+          {/* - Rota do Layout Principal: Protegida !! - */}
 
-                  <Route element={<ProtectedRoute session={session} />}>
-                    <Route element={<AppLayout />}>
-                      <Route
-                        path="/pagina-principal"
-                        element={<MainPage />}
-                      />
-                    </Route>
-                  </Route>
-                </Routes>
-              </MessageProvider>
-            </ChatProvider>
-          </CodeReviewProvider>
-        </ThemeProvider>
-      </AuthenticationProvider>
+          <Route element={<ProtectedRoute session={session} />}>
+            <Route element={<AppLayout />}>
+              <Route
+                path="/pagina-principal"
+                element={<MainPage />}
+              />
+            </Route>
+          </Route>
+        </Routes>
+      </AppProviders>
     </div>
   );
 };

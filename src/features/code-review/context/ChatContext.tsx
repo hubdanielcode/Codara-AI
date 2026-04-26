@@ -3,7 +3,7 @@ import { createContext, useEffect, useState, type ReactNode } from "react";
 import type { Chat } from "../types/chat";
 
 interface ChatContextType {
-  /* - Dados dos Chats - */
+  /* - Dados dos chats - */
 
   title: string;
   setTitle: (title: string) => void;
@@ -14,14 +14,13 @@ interface ChatContextType {
 
   /* - Funções - */
 
-  clearContextData: () => void;
   fetchChats: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
 const ChatProvider = ({ children }: { children: ReactNode }) => {
-  /* - Dados dos Chats - */
+  /* - Dados dos chats - */
 
   const [title, setTitle] = useState<string>("");
   const [chats, setChats] = useState<Chat[]>([]);
@@ -49,15 +48,10 @@ const ChatProvider = ({ children }: { children: ReactNode }) => {
     fetchChats();
   }, []);
 
-  const clearContextData = () => {
-    setTitle("");
-  };
-
   return (
     <ChatContext.Provider
       value={{
-        /* - Dados dos Chats - */
-
+        /* - Dados dos chats - */
         title,
         setTitle,
         selectedChatId,
@@ -67,7 +61,6 @@ const ChatProvider = ({ children }: { children: ReactNode }) => {
 
         /* - Funções - */
 
-        clearContextData,
         fetchChats,
       }}
     >

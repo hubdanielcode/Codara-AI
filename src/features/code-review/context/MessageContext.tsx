@@ -14,7 +14,7 @@ interface MessageContextType {
 const MessageContext = createContext<MessageContextType | null>(null);
 
 const MessageProvider = ({ children }: { children: ReactNode }) => {
-  /* - Dados das Mensagens - */
+  /* - Dados das mensagens - */
 
   const [content, setContent] = useState<string>("");
 
@@ -27,7 +27,7 @@ const MessageProvider = ({ children }: { children: ReactNode }) => {
   return (
     <MessageContext.Provider
       value={{
-        /* - Dados das Mensagens - */
+        /* - Dados das mensagens - */
 
         content,
         setContent,

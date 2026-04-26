@@ -8,24 +8,31 @@ import { supabase } from "@/supabase/supabase";
 import { FaTrashAlt, FaPenAlt } from "react-icons/fa";
 import { ChatTitleModal } from "./ChatTitleModal";
 import { useThemeContext } from "../hooks/useThemeContext";
-import { useChatContext } from "@/features/code-review";
+import {
+  useChatContext,
+  usePatchContext,
+  type Chat,
+} from "@/features/code-review";
 import { ChatDeleteModal } from "./ChatDeleteModal";
+import { getPatches } from "@/features/code-review/service/PatchService";
 
 const SideBar = () => {
-  /* - Puxando do Context - */
+  /* - Puxando do context - */
 
   const { theme, toggleTheme } = useThemeContext();
   const { name, photo, email } = useAuthenticationContext();
+  const { patches, setPatches } = usePatchContext();
   const { selectedChatId, setSelectedChatId, chats, setChats, fetchChats } =
     useChatContext();
 
   const photoUrl = photo ? URL.createObjectURL(photo) : null;
 
-  /* - Estados Gerais - */
+  /* - Estados gerais - */
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
-  /* - Estados do Modal - */
+  /* - Estados do modal - */
 
   const [isChatTitleModalOpen, setIsChatTitleModalOpen] =
     useState<boolean>(false);
@@ -33,10 +40,14 @@ const SideBar = () => {
   const [isChatDeleteModalOpen, setIsChatDeleteModalOpen] =
     useState<boolean>(false);
 
-  /* - Estados do Dropdown - */
+  /* - Estados do dropdown - */
 
   const [isUserPreferencesOpen, setIsUserPreferencesOpen] =
     useState<boolean>(false);
+
+  /* - Estados do histórico de correções - */
+
+  const [isPatchHistoryOpen, setIsPatchHistoryOpen] = useState<boolean>(false);
 
   /* - Buscando ID no Supabase - */
 
@@ -86,8 +97,8 @@ const SideBar = () => {
             transition={{ delay: 0.2, duration: 0.2 }}
           >
             {sideBarIcons.map((option, index) => (
-              <li
-                className="relative flex items-center gap-2 m-4 group"
+              <div
+                className="relative flex flex-col gap-2 m-4 group"
                 key={index}
                 onClick={async () => {
                   if (option.label === "Novo Bate-Papo") {
@@ -100,26 +111,79 @@ const SideBar = () => {
                   if (option.label === "Preferências do Usuário") {
                     setIsUserPreferencesOpen(!isUserPreferencesOpen);
                   }
+
+                  if (option.label === "Histórico de Correções") {
+                    setIsPatchHistoryOpen(!isPatchHistoryOpen);
+                    if (selectedChatId) {
+                      const data = await getPatches(selectedChatId);
+                      console.log(data);
+                      setPatches(data);
+                    }
+                  }
                 }}
               >
-                <option.icon
-                  className={`h-8 w-8 p-2 rounded-full text-center text-blue-600 group-hover:text-blue-400 ${
-                    theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"
-                  }`}
-                />
-                <span
-                  className={`group-hover:opacity-70 ${
-                    theme === "Dark" ? "text-white" : "text-black"
-                  }`}
-                >
-                  {option.label}
-                </span>
+                <div className="flex items-center gap-4">
+                  <option.icon
+                    className={`h-8 w-8 p-2 rounded-full text-center text-blue-600 group-hover:text-blue-400 ${
+                      theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"
+                    }`}
+                  />
+
+                  <span
+                    className={`flex items-center justify-center group-hover:opacity-70 ${
+                      theme === "Dark" ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {option.label}
+                  </span>
+                </div>
+
+                {/* - Histórico de correções de cada chat - */}
+
+                {option.label === "Histórico de Correções" && (
+                  <AnimatePresence>
+                    {isPatchHistoryOpen && (
+                      <motion.ul
+                        className={`flex flex-col items-center mx-8 rounded-lg px-4 py-2 z-50 w-44 cursor-pointer border ${
+                          theme === "Dark"
+                            ? "bg-zinc-900 border-zinc-700"
+                            : "bg-white border-stone-200 shadow-sm"
+                        }`}
+                        initial={{ y: -10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {patches.map((patch) => (
+                          <li
+                            className={`flex items-center justify-between gap-2 py-2 ${
+                              theme === "Dark" ? "text-white" : "text-black"
+                            }`}
+                            key={patch.id}
+                          >
+                            <span className="text-white text-sm font-semibold whitespace-nowrap">
+                              {patch.title}
+                            </span>
+
+                            {patch.had_errors ? (
+                              <span className="text-red-500 text-xs">✗</span>
+                            ) : (
+                              <span className="text-green-500 text-xs">✓</span>
+                            )}
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                )}
+
+                {/* - Preferências do usuário - */}
 
                 {option.label === "Preferências do Usuário" && (
                   <AnimatePresence>
                     {isUserPreferencesOpen && (
                       <motion.ul
-                        className={`absolute top-full left-8 mt-1 rounded-lg px-4 py-2 z-50 w-44 cursor-pointer border ${
+                        className={`mx-8 rounded-lg px-4 py-2 z-50 w-44 cursor-pointer border ${
                           theme === "Dark"
                             ? "bg-zinc-900 border-zinc-700"
                             : "bg-white border-stone-200 shadow-sm"
@@ -147,7 +211,7 @@ const SideBar = () => {
                     )}
                   </AnimatePresence>
                 )}
-              </li>
+              </div>
             ))}
           </motion.ul>
 
@@ -195,6 +259,7 @@ const SideBar = () => {
                   <button
                     className="group"
                     onClick={() => {
+                      setSelectedChat(chat);
                       setSelectedChatId(chat.id);
                       setIsChatTitleModalOpen(true);
                     }}
@@ -240,6 +305,7 @@ const SideBar = () => {
                 <div className="text-white">{name.charAt(0)}</div>
               </div>
             )}
+
             <span className={theme === "Dark" ? "text-white" : "text-black"}>
               {name}
             </span>
@@ -274,6 +340,7 @@ const SideBar = () => {
           setIsChatTitleModalOpen={setIsChatTitleModalOpen}
           chatId={selectedChatId}
           onConfirm={fetchChats}
+          currentTitle={selectedChat?.title ?? ""}
         />
       )}
 

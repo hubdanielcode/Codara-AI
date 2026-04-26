@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Code2, Mail, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { regex, masks } from "@/shared";
 import { supabase } from "@/supabase/supabase";
@@ -38,6 +38,23 @@ const RecoverPassword = () => {
 
     setRecoverEmail("");
   };
+
+  /* - Criando a referência para fechar o erro ao clicar fora - */
+
+  const RecoverPasswordRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!RecoverPasswordRef.current) return;
+
+      if (!RecoverPasswordRef.current.contains(e.target as Node)) {
+        setRecoverErrorMessage("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
@@ -100,6 +117,7 @@ const RecoverPassword = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="button"
+              ref={RecoverPasswordRef}
               onClick={handleRecoverPassword}
             >
               Enviar Link de Recuperação

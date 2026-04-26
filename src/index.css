@@ -1,15 +1,32 @@
 @import "tailwindcss";
 
+/* - Tema claro - */
+:root {
+  --autofill-bg: #ffffff;
+  --autofill-text: #1c1c1c;
+  --scrollbar-thumb: #d4d4d8;
+  --scrollbar-track: #f4f4f5;
+}
+
+/* - Tema escuro - */
+
+:root.dark {
+  --autofill-bg: #27272a;
+  --autofill-text: #ffffff;
+  --scrollbar-thumb: #3f3f46;
+  --scrollbar-track: #18181b;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #27272a inset;
-  -webkit-text-fill-color: white;
+  -webkit-box-shadow: 0 0 0px 1000px var(--autofill-bg) inset;
+  -webkit-text-fill-color: var(--autofill-text);
   transition: background-color 5000s ease-in-out 0s;
 }
 
 * {
-  scrollbar-color: #3f3f46 #18181b;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   scrollbar-width: thin;
 }
 

@@ -1,31 +1,51 @@
-import { useChatContext } from "@/features/code-review/hooks/useChatContext";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
 import { updateChat } from "@/features/code-review/service/ChatService";
+import { useState, useRef, useEffect } from "react";
 
 interface ChatTitleModalProps {
   setIsChatTitleModalOpen: (isChatTitleModalOpen: boolean) => void;
   chatId: string | null;
   onConfirm: () => void;
+  currentTitle: string;
 }
 
 const ChatTitleModal: React.FC<ChatTitleModalProps> = ({
   setIsChatTitleModalOpen,
   chatId,
   onConfirm,
+  currentTitle,
 }) => {
-  /* - Puxando do Context - */
+  /* - Puxando do context - */
 
-  const { title, setTitle } = useChatContext();
   const { theme } = useThemeContext();
 
-  /* - Estado do Modal de Edição - */
+  /* - Estados gerais - */
+
+  const [newTitle, setNewTitle] = useState<string>(currentTitle);
+  const [editingTitleError, setEditingTitleError] = useState<string>("");
+
+  /* - Criando a referência para fechar o erro ao clicar fora - */
+
+  const EditingTitleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!EditingTitleRef.current) return;
+
+      if (!EditingTitleRef.current.contains(e.target as Node)) {
+        setEditingTitleError("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="flex items-center justify-center fixed inset-0 bg-black/60 min-h-screen w-full z-50">
+    <div className="flex items-center justify-center fixed inset-0 bg-black/90 min-h-screen w-full z-50">
       <div
-        className={`flex rounded-lg w-[22%] h-fit border ${
+        className={`relative flex flex-col items-center justify-center rounded-lg w-[25%] h-75 border ${
           theme === "Dark"
             ? "bg-zinc-800 border-zinc-700"
             : "bg-white border-stone-200 shadow-md"
@@ -47,8 +67,8 @@ const ChatTitleModal: React.FC<ChatTitleModalProps> = ({
                 : "text-stone-800 bg-stone-50 border-stone-300 placeholder:text-stone-400"
             }`}
             placeholder="Digite o novo título..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
           />
 
           <div className="flex flex-1 justify-between my-6">
@@ -57,8 +77,14 @@ const ChatTitleModal: React.FC<ChatTitleModalProps> = ({
               initial={{ x: 0, opacity: 1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              ref={EditingTitleRef}
               onClick={async () => {
-                await updateChat(chatId!, { title });
+                if (!newTitle.trim()) {
+                  setEditingTitleError("Insira um título válido!");
+                  return;
+                }
+
+                await updateChat(chatId!, { title: newTitle });
                 onConfirm();
                 setIsChatTitleModalOpen(false);
               }}
@@ -72,7 +98,7 @@ const ChatTitleModal: React.FC<ChatTitleModalProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                setTitle("");
+                setNewTitle(currentTitle);
                 setIsChatTitleModalOpen(false);
               }}
             >
@@ -82,11 +108,23 @@ const ChatTitleModal: React.FC<ChatTitleModalProps> = ({
         </div>
 
         <button
-          className="absolute top-97 right-190 cursor-pointer"
+          className="absolute top-9 right-9 cursor-pointer"
           onClick={() => setIsChatTitleModalOpen(false)}
         >
-          <X className="bg-red-600 rounded-lg text-white" />
+          <X className="bg-red-600 rounded-lg text-white h-7 w-7" />
         </button>
+
+        <motion.div
+          className="min-h-12"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {editingTitleError && (
+            <p className="w-70 flex items-center justify-center h-12 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm font-semibold px-4 py-3 text-center">
+              {editingTitleError}
+            </p>
+          )}
+        </motion.div>
       </div>
     </div>
   );

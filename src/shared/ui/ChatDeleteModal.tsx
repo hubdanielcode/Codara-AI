@@ -21,7 +21,7 @@ const ChatDeleteModal: React.FC<ChatDeleteModalProps> = ({
   return (
     <div className="flex items-center justify-center fixed inset-0 bg-black/60 min-h-screen w-full z-50">
       <div
-        className={`flex rounded-lg w-[22%] h-fit border ${
+        className={`relative flex rounded-lg w-[22%] h-fit border ${
           theme === "Dark"
             ? "bg-zinc-800 border-zinc-700"
             : "bg-white border-stone-200 shadow-md"
@@ -76,7 +76,7 @@ const ChatDeleteModal: React.FC<ChatDeleteModalProps> = ({
         </div>
 
         <button
-          className="absolute top-98 right-192 cursor-pointer"
+          className="absolute top-5 right-5 cursor-pointer"
           onClick={() => setIsChatDeleteModalOpen(false)}
         >
           <X className="bg-red-600 rounded-lg text-white" />
