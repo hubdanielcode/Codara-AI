@@ -4,7 +4,7 @@ const Footer = () => {
   const { theme } = useThemeContext();
 
   return (
-    <div
+    <footer
       className={`px-4 py-3 flex items-center justify-center border-t ${
         theme === "Dark"
           ? "bg-zinc-800 border-zinc-700"
@@ -20,7 +20,7 @@ const Footer = () => {
         </strong>
         Todos os direitos reservados.
       </span>
-    </div>
+    </footer>
   );
 };
 

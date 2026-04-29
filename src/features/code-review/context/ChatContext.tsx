@@ -1,8 +1,8 @@
-import { getChats } from "@/features/code-review/service/ChatService";
+import { getChats } from "../services/ChatService";
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import type { Chat } from "../types/chat";
 
-interface ChatContextType {
+export interface ChatContextType {
   /* - Dados dos chats - */
 
   title: string;

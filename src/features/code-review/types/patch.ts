@@ -1,4 +1,5 @@
 export type Patch = {
+  user_id: string;
   id: string;
   chat_id: string;
   title: string;

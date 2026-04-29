@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { getUsers } from "../service/authenticationService";
+import { getUsers } from "../services/authenticationService";
 
 export interface AuthenticationContextType {
   /* - Dados do Usuário - */
@@ -9,8 +9,8 @@ export interface AuthenticationContextType {
   setName: (name: string) => void;
   email: string;
   setEmail: (email: string) => void;
-  photo: File | null;
-  setPhoto: (photo: File | null) => void;
+  photo: string | null;
+  setPhoto: (photo: string | null) => void;
   userId: string | null;
   setUserId: (userId: string) => void;
 
@@ -34,7 +34,7 @@ const AuthenticationProvider = ({
 
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(session?.user.id ?? null);
 
   /* - Pegando o nome do usuário logado - */
@@ -46,8 +46,9 @@ const AuthenticationProvider = ({
       try {
         const data = await getUsers(session.user.id);
         setName(data.name);
+        setPhoto(data.user_photo ?? null);
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
+        console.log("Erro ao buscar usuário:", error);
       }
     };
     fetchActualUser();

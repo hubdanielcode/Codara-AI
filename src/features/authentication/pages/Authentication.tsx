@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { useAuthenticationContext } from "../hooks/useAuthenticationContext";
 import { regex, masks } from "@/shared";
 import { supabase } from "@/supabase/supabase";
-import { createUser } from "../service/authenticationService";
+import { createUser } from "../services/authenticationService";
 
 const Authentication = () => {
   /* - Estados do Usuário - */
@@ -18,6 +18,10 @@ const Authentication = () => {
   /* - Estados de Erro - */
 
   const [signUpError, setSignUpError] = useState<string>("");
+
+  /* - Estados do checkbox - */
+
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -45,6 +49,14 @@ const Authentication = () => {
 
     if (password !== confirmPassword) {
       return setSignUpError("As senhas não coincidem.");
+    }
+
+    /* - Verificando se os termos foram aceitos - */
+
+    if (!acceptedTerms) {
+      return setSignUpError(
+        "Você deve aceitar os Termos de Uso e a Política de Privacidade.",
+      );
     }
 
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -94,7 +106,13 @@ const Authentication = () => {
             <Code2 className="h-8 w-8 text-white" />
           </motion.div>
 
-          <p className="text-white font-bold text-3xl mb-2">Criar Conta</p>
+          <p
+            className="text-white font-bold text-3xl mb-2"
+            data-testid="create-account-title"
+          >
+            Criar Conta
+          </p>
+
           <p className="text-zinc-400 font-semibold">
             Comece a revisar seu código agora mesmo.
           </p>
@@ -202,11 +220,15 @@ const Authentication = () => {
               </p>
             </div>
 
+            {/* - Checkbox de termos - */}
+
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-start text-sm text-zinc-400 cursor-pointer">
                 <input
                   type="checkbox"
                   className="mr-2 mt-1 border-zinc-700 cursor-pointer"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
                 />
 
                 <span>
@@ -220,7 +242,7 @@ const Authentication = () => {
                   e{" "}
                   <Link
                     className="text-blue-500 hover:text-blue-400 font-semibold"
-                    to="/políticas-de-privacidade"
+                    to="/política-de-privacidade"
                   >
                     Política de Privacidade
                   </Link>
@@ -229,11 +251,12 @@ const Authentication = () => {
             </div>
 
             <motion.button
-              className="flex justify-center items-center w-full bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer mb-6"
+              className="flex justify-center items-center w-full bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="submit"
               ref={signUpRef}
+              disabled={!acceptedTerms}
             >
               Criar Conta
             </motion.button>
@@ -265,4 +288,5 @@ const Authentication = () => {
     </div>
   );
 };
+
 export { Authentication };

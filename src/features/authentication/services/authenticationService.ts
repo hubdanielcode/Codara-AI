@@ -17,6 +17,10 @@ const uploadUserPhoto = async (photo: File, user_id: string) => {
 
   const { data } = supabase.storage.from("photos").getPublicUrl(fileName);
 
+  /* - Salvando a URL da foto no bucket do Supabase - */
+
+  await updateUser({ user_photo: data.publicUrl });
+
   return data.publicUrl;
 };
 

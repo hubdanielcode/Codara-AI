@@ -1,6 +1,6 @@
 import { createContext, useState, type ReactNode } from "react";
 
-interface MessageContextType {
+export interface MessageContextType {
   /* - Dados das Mensagens - */
 
   content: string;

@@ -14,7 +14,7 @@
   --autofill-bg: #27272a;
   --autofill-text: #ffffff;
   --scrollbar-thumb: #3f3f46;
-  --scrollbar-track: #18181b;
+  --scrollbar-track: #ffffff !important;
 }
 
 input:-webkit-autofill,

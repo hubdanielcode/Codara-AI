@@ -1,5 +1,5 @@
 import { useChatContext } from "@/features/code-review";
-import { deleteChat } from "@/features/code-review/service/ChatService";
+import { deleteChat } from "@/features/code-review/services/ChatService";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";

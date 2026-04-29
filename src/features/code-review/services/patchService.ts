@@ -22,7 +22,7 @@ const createPatch = async (
     .select();
 
   if (error) {
-    throw new Error("Erro ao criar update!");
+    throw new Error("Erro ao criar patch!");
   }
 
   return data;
@@ -43,6 +43,7 @@ const getPatches = async (chatId: string) => {
     .from("patches")
     .select("*")
     .eq("chat_id", chatId)
+    .eq("user_id", user.id)
 
     .order("created_at", { ascending: false });
 

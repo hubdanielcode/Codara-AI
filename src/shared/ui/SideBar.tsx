@@ -1,9 +1,10 @@
 import { useAuthenticationContext } from "@/features/authentication/hooks/useAuthenticationContext";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { sideBarIcons } from "../utils/sideBarIcons";
-import { createChat } from "@/features/code-review/service/ChatService";
-import { uploadUserPhoto } from "@/features/authentication/service/authenticationService";
+createChat;
+import { uploadUserPhoto } from "@/features/authentication/services/authenticationService";
 import { supabase } from "@/supabase/supabase";
 import { FaTrashAlt, FaPenAlt } from "react-icons/fa";
 import { ChatTitleModal } from "./ChatTitleModal";
@@ -14,30 +15,38 @@ import {
   type Chat,
 } from "@/features/code-review";
 import { ChatDeleteModal } from "./ChatDeleteModal";
-import { getPatches } from "@/features/code-review/service/PatchService";
+import {
+  deletePatch,
+  getPatches,
+} from "@/features/code-review/services/PatchService";
+import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { PhotoCropModal } from "./PhotoCropModal";
+import { createChat } from "@/features/code-review/services/ChatService";
 
 const SideBar = () => {
   /* - Puxando do context - */
 
   const { theme, toggleTheme } = useThemeContext();
-  const { name, photo, email } = useAuthenticationContext();
+  const { name, photo, email, setPhoto } = useAuthenticationContext();
   const { patches, setPatches } = usePatchContext();
   const { selectedChatId, setSelectedChatId, chats, setChats, fetchChats } =
     useChatContext();
-
-  const photoUrl = photo ? URL.createObjectURL(photo) : null;
 
   /* - Estados gerais - */
 
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string>("");
 
-  /* - Estados do modal - */
+  /* - Estados dos modais - */
 
   const [isChatTitleModalOpen, setIsChatTitleModalOpen] =
     useState<boolean>(false);
 
   const [isChatDeleteModalOpen, setIsChatDeleteModalOpen] =
+    useState<boolean>(false);
+
+  const [isPhotoCropModalOpen, setIsPhotoCropModalOpen] =
     useState<boolean>(false);
 
   /* - Estados do dropdown - */
@@ -59,6 +68,62 @@ const SideBar = () => {
       setUserId(user?.id ?? null);
     };
     getUser();
+  }, []);
+
+  /* - Funções - */
+
+  const navigate = useNavigate();
+
+  const patchDay = new Date().toLocaleDateString("pt-BR");
+
+  const handleClearPatchHistory = async () => {
+    await Promise.all(patches.map((patch) => deletePatch(patch.id)));
+    setPatches([]);
+  };
+
+  const handlePhotoClick = () => {
+    document.getElementById("photo")?.click();
+  };
+
+  const handleaddPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const imageUrl = URL.createObjectURL(file);
+    setCropImageSrc(imageUrl);
+    setIsPhotoCropModalOpen(true);
+  };
+
+  /* - Criando as referências para fechar os menus ao clicar fora - */
+
+  // 1. Histórico de correções
+
+  const PatchDropdownRef = useRef<HTMLUListElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!PatchDropdownRef.current) return;
+      if (!PatchDropdownRef.current.contains(e.target as Node)) {
+        setIsPatchHistoryOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 2. Preferências do usuário
+
+  const UserPreferencesDropwdownRef = useRef<HTMLUListElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!UserPreferencesDropwdownRef.current) return;
+      if (!UserPreferencesDropwdownRef.current.contains(e.target as Node)) {
+        setIsUserPreferencesOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -113,10 +178,9 @@ const SideBar = () => {
                   }
 
                   if (option.label === "Histórico de Correções") {
-                    setIsPatchHistoryOpen(!isPatchHistoryOpen);
+                    setIsPatchHistoryOpen(true);
                     if (selectedChatId) {
                       const data = await getPatches(selectedChatId);
-                      console.log(data);
                       setPatches(data);
                     }
                   }
@@ -144,34 +208,70 @@ const SideBar = () => {
                   <AnimatePresence>
                     {isPatchHistoryOpen && (
                       <motion.ul
-                        className={`flex flex-col items-center mx-8 rounded-lg px-4 py-2 z-50 w-44 cursor-pointer border ${
-                          theme === "Dark"
-                            ? "bg-zinc-900 border-zinc-700"
-                            : "bg-white border-stone-200 shadow-sm"
-                        }`}
+                        className={`flex flex-col flex-1 w-full rounded-xl border ${theme === "Dark" ? "border-zinc-700" : "border-stone-200"}`}
+                        ref={PatchDropdownRef}
                         initial={{ y: -10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -10, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.4 }}
                       >
                         {patches.map((patch) => (
-                          <li
-                            className={`flex items-center justify-between gap-2 py-2 ${
-                              theme === "Dark" ? "text-white" : "text-black"
+                          <motion.li
+                            className={`flex items-center justify-between gap-2 px-4 py-2 w-full overflow-hidden first:rounded-t-xl first:pt-4 last:rounded-b-xl last:pb-4 ${
+                              theme === "Dark"
+                                ? "text-white bg-zinc-950 border-zinc-700"
+                                : "text-black bg-stone-100 border-stone-200"
                             }`}
-                            key={patch.id}
+                            key={patch.title}
                           >
-                            <span className="text-white text-sm font-semibold whitespace-nowrap">
-                              {patch.title}
-                            </span>
+                            <div
+                              className={`flex flex-col flex-1 min-w-0 text-sm text-left font-semibold rounded-lg overflow-hidden px-4 py-2 border ${theme === "Dark" ? "bg-zinc-900 border-zinc-700" : "bg-white border-stone-200"}`}
+                              title={patch.title}
+                            >
+                              <div className="flex items-center justify-between w-full mb-2">
+                                <div className="flex items-center gap-1">
+                                  <Clock
+                                    className={`h-4 w-4 mr-2 ${theme === "Dark" ? "text-zinc-400" : "text-stone-500"}`}
+                                  />
+                                  <span
+                                    className={`mr-auto ${theme === "Dark" ? "text-zinc-400" : "text-stone-500"}`}
+                                  >
+                                    {patchDay}
+                                  </span>
+                                </div>
 
-                            {patch.had_errors ? (
-                              <span className="text-red-500 text-xs">✗</span>
-                            ) : (
-                              <span className="text-green-500 text-xs">✓</span>
-                            )}
-                          </li>
+                                {patch.had_errors ? (
+                                  <AlertCircle className="h-4 w-4 text-red-600" />
+                                ) : (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                )}
+                              </div>
+
+                              <span
+                                className="truncate cursor-pointer"
+                                onClick={() =>
+                                  navigate("/pagina-principal", {
+                                    state: { patch },
+                                  })
+                                }
+                              >
+                                {patch.title}
+                              </span>
+                            </div>
+                          </motion.li>
                         ))}
+
+                        <div
+                          className={`flex flex-col flex-1 w-full justify-center items-center cursor-pointer rounded-b-xl ${theme === "Dark" ? "text-white bg-zinc-950 border-zinc-700" : "text-black bg-stone-100 border-stone-200"}`}
+                        >
+                          <button
+                            className={`font-semibold px-2 py-1 bg-red-600 border rounded-lg text-white w-[85%] h-[10%] mt-2 mb-4 disabled:hidden cursor-pointer ${theme === "Dark" ? "border-zinc-700" : "border-stone-200"}`}
+                            onClick={handleClearPatchHistory}
+                            disabled={patches.length === 0}
+                          >
+                            Limpar Histórico
+                          </button>
+                        </div>
                       </motion.ul>
                     )}
                   </AnimatePresence>
@@ -183,21 +283,23 @@ const SideBar = () => {
                   <AnimatePresence>
                     {isUserPreferencesOpen && (
                       <motion.ul
-                        className={`mx-8 rounded-lg px-4 py-2 z-50 w-44 cursor-pointer border ${
-                          theme === "Dark"
-                            ? "bg-zinc-900 border-zinc-700"
-                            : "bg-white border-stone-200 shadow-sm"
-                        }`}
+                        className={`flex flex-col flex-1 w-full rounded-xl border ${theme === "Dark" ? "border-zinc-700" : "border-stone-200"}`}
+                        ref={UserPreferencesDropwdownRef}
                         initial={{ y: -10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -10, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.4 }}
                       >
-                        <li className="flex flex-col items-center">
-                          <button
-                            className={`font-semibold cursor-pointer ${
-                              theme === "Dark" ? "text-white" : "text-black"
-                            }`}
+                        <motion.li
+                          className={`flex items-center justify-between gap-2 px-4 py-2 w-full overflow-hidden first:rounded-t-xl first:pt-4 last:rounded-b-xl last:pb-4 ${
+                            theme === "Dark"
+                              ? "text-white bg-zinc-950 border-zinc-700"
+                              : "text-black bg-stone-100 border-stone-200"
+                          }`}
+                        >
+                          <div
+                            className={`flex flex-col flex-1 min-w-0 text-sm text-left font-semibold rounded-lg overflow-hidden px-4 py-2 border ${theme === "Dark" ? "bg-zinc-900 border-zinc-700 text-white" : "bg-white border-stone-200 text-black"}`}
+                            role="button"
                             onClick={() =>
                               toggleTheme(theme === "Dark" ? "Light" : "Dark")
                             }
@@ -205,8 +307,8 @@ const SideBar = () => {
                             {theme === "Dark"
                               ? "Tema Claro ☀️"
                               : "Tema Escuro 🌕"}
-                          </button>
-                        </li>
+                          </div>
+                        </motion.li>
                       </motion.ul>
                     )}
                   </AnimatePresence>
@@ -215,25 +317,31 @@ const SideBar = () => {
             ))}
           </motion.ul>
 
+          {/* - Lista de chats - */}
+
           <ul className="mt-auto mb-2 mr-3">
             {chats.map((chat) => (
               <div
-                className="flex"
+                className="flex items-center gap-2 px-4 my-1 min-w-0"
                 key={chat.id}
               >
-                <li
-                  className={`flex ml-4 mr-auto my-3 font-semibold ${
+                {/* - Título do chat - */}
+
+                <p
+                  className={`truncate flex-1 min-w-0 font-semibold cursor-pointer my-2 ${
                     theme === "Dark"
                       ? "text-white hover:text-zinc-300"
                       : "text-black hover:text-stone-500"
                   }`}
-                  role="button"
                   onClick={() => setSelectedChatId(chat.id)}
+                  title={chat.title}
                 >
                   {chat.title}
-                </li>
+                </p>
 
-                <div className="flex">
+                {/* - Botões de ação - */}
+
+                <div className="flex shrink-0">
                   <button
                     className="group"
                     onClick={async () => {
@@ -252,6 +360,7 @@ const SideBar = () => {
                         className={`group-hover:text-red-600 ${
                           theme === "Dark" ? "text-zinc-400" : "text-stone-800"
                         }`}
+                        data-testid="modal-delete"
                       />
                     </div>
                   </button>
@@ -275,6 +384,7 @@ const SideBar = () => {
                         className={`group-hover:text-blue-600 ${
                           theme === "Dark" ? "text-zinc-400" : "text-stone-800"
                         }`}
+                        data-testid="modal-update"
                       />
                     </div>
                   </button>
@@ -284,25 +394,31 @@ const SideBar = () => {
           </ul>
         </motion.div>
 
+        {/* - Informações do usuário - */}
+
         <div
           className={`flex flex-col justify-center px-4 flex-1 border-t max-h-20 font-semibold ${
             theme === "Dark" ? "border-zinc-700" : "border-stone-200"
           }`}
         >
           <div className="flex gap-2 text-lg items-center">
-            {photoUrl ? (
+            {/* - Foto do usuário - */}
+
+            {photo ? (
               <img
-                src={photoUrl}
+                src={photo}
                 alt={name}
-                className="w-8 h-8 rounded-full"
+                className="w-10 h-10 rounded-full cursor-pointer object-cover"
+                onClick={handlePhotoClick}
               />
             ) : (
               <div
-                className={`flex justify-center items-center w-8 h-8 rounded-full bg-blue-600 border ${
+                className={`flex justify-center items-center w-8 h-8 rounded-full bg-blue-600 border cursor-pointer ${
                   theme === "Dark" ? "border-zinc-700" : "border-blue-400"
                 }`}
+                onClick={handlePhotoClick}
               >
-                <div className="text-white">{name.charAt(0)}</div>
+                <span className="text-white text-sm">{name.charAt(0)}</span>
               </div>
             )}
 
@@ -319,17 +435,14 @@ const SideBar = () => {
             {email ?? ""}
           </div>
 
+          {/* - Input de foto escondido - */}
+
           <input
             className="hidden"
             type="file"
             accept="image/*"
             id="photo"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file && userId) {
-                uploadUserPhoto(file, userId);
-              }
-            }}
+            onChange={handleaddPhoto}
           />
         </div>
       </motion.div>
@@ -350,6 +463,26 @@ const SideBar = () => {
           setIsChatDeleteModalOpen={setIsChatDeleteModalOpen}
           chatId={selectedChatId}
           onConfirm={fetchChats}
+        />
+      )}
+
+      {isPhotoCropModalOpen && (
+        <PhotoCropModal
+          imageSrc={cropImageSrc}
+          onConfirm={async (croppedImage) => {
+            /* - Convertendo base64 para File - */
+
+            const response = await fetch(croppedImage);
+            const blob = await response.blob();
+            const file = new File([blob], "photo.png", { type: "image/png" });
+
+            /* - Fazendo upload e atualizando a foto no context - */
+
+            const url = await uploadUserPhoto(file, userId!);
+            setPhoto(url);
+            setIsPhotoCropModalOpen(false);
+          }}
+          onClose={() => setIsPhotoCropModalOpen(false)}
         />
       )}
     </>

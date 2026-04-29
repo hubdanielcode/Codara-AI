@@ -11,7 +11,7 @@ const Header = ({ openSideBar }: { openSideBar: () => void }) => {
   const hours = new Date().toLocaleTimeString("pt-BR");
 
   return (
-    <div
+    <header
       className={`h-full flex flex-col overflow-hidden ${
         theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"
       }`}
@@ -81,7 +81,7 @@ const Header = ({ openSideBar }: { openSideBar: () => void }) => {
           </motion.button>
         </div>
       </motion.header>
-    </div>
+    </header>
   );
 };
 

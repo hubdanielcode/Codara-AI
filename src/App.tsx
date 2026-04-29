@@ -1,3 +1,4 @@
+import "react-image-crop/dist/ReactCrop.css";
 import { Route, Routes, Outlet, useNavigate } from "react-router";
 import {
   Authentication,
@@ -13,6 +14,8 @@ import { supabase } from "./supabase/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { useThemeContext } from "./shared/hooks/useThemeContext";
 import { AppProviders } from "./shared/providers/AppProviders";
+import { PrivacyPolicy } from "./shared/pages/PrivacyPolicy";
+import { TermsOfUse } from "./shared/pages/TermsOfUse";
 
 const AppLayout = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
@@ -106,6 +109,20 @@ const App = () => {
           <Route
             path="/recuperar-senha"
             element={<RecoverPassword />}
+          />
+
+          {/* - Rota de Política de Privacidade - */}
+
+          <Route
+            path="/política-de-privacidade"
+            element={<PrivacyPolicy />}
+          />
+
+          {/* - Rota de Termos de Uso - */}
+
+          <Route
+            path="/termos-de-uso"
+            element={<TermsOfUse />}
           />
 
           {/* - Rota de Erro - */}

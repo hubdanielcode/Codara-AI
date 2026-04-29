@@ -1,7 +1,7 @@
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
-import { updateChat } from "@/features/code-review/service/ChatService";
+import { updateChat } from "@/features/code-review/services/ChatService";
 import { useState, useRef, useEffect } from "react";
 
 interface ChatTitleModalProps {

@@ -12,12 +12,11 @@ import { useCodeReviewContext } from "../hooks/useCodeReviewContext";
 import { useAuthenticationContext } from "@/features/authentication/hooks/useAuthenticationContext";
 import { useChatContext } from "../hooks/useChatContext";
 import { supabase } from "@/supabase/supabase";
-import {
-  createChat,
-  updateChat,
-} from "@/features/code-review/service/ChatService";
+import { createChat, updateChat } from "../services/ChatService";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
-import { generateChatTitle } from "../service/CodeReviewService";
+import { generateChatTitle } from "../services/CodeReviewService";
+import { createPatch } from "../services/PatchService";
+import { useLocation } from "react-router-dom";
 
 const MainPage = () => {
   /* - Puxando do context - */
@@ -40,16 +39,33 @@ const MainPage = () => {
 
   /* - Estados do código - */
 
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [code, setCode] = useState<string>("");
 
   /* - Funções - */
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.patch) {
+      const patch = location.state.patch;
+      setSelectedChatId(patch.chat_id);
+    }
+  }, [location.state]);
 
   const handleAnalyze = async (code: string) => {
     if (!code.trim()) return;
 
     let chatId = selectedChatId;
     const isNewChat = !selectedChatId;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Usuário não Autenticado!");
+    }
 
     setIsAnalyzing(true);
 
@@ -61,14 +77,21 @@ const MainPage = () => {
 
       await analyzeCode(code, chatId!);
 
+      await createPatch({
+        user_id: user.id,
+        chat_id: chatId!,
+        title: await generateChatTitle(code),
+        had_errors: error.length > 0,
+      });
+
       if (isNewChat) {
         const title = await generateChatTitle(code);
         await updateChat(chatId!, { title });
-        fetchChats();
+        await fetchChats();
         setSelectedChatId(chatId);
       }
     } catch (error) {
-      console.log("Não foi possível ler o código:", error);
+      console.log("Erro:", error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -86,30 +109,38 @@ const MainPage = () => {
       setCorrectedCode("");
       setCode("");
 
-      const { error, data } = await supabase
+      const { data, error: adminError } = await supabase
         .from("messages")
         .select("*")
         .eq("chat_id", selectedChatId)
         .eq("role", "admin")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error) return;
+      if (adminError) {
+        console.error("Erro ao buscar admin message:", adminError);
+        return;
+      }
 
-      const { data: userMessage } = await supabase
+      const { data: userMessage, error: userError } = await supabase
         .from("messages")
         .select("content")
         .eq("chat_id", selectedChatId)
         .eq("role", "user")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      setError(data.errors ?? []);
-      setSuggestion(data.suggestions ?? []);
-      setImprovement(data.improvements ?? []);
-      setCorrectedCode(data.content ?? "");
+      if (userError) {
+        console.error("Erro ao buscar user message:", userError);
+        return;
+      }
+
+      setError(data?.errors ?? []);
+      setSuggestion(data?.suggestions ?? []);
+      setImprovement(data?.improvements ?? []);
+      setCorrectedCode(data?.content ?? "");
       setCode(userMessage?.content ?? "");
     };
     getChatData();
@@ -122,10 +153,10 @@ const MainPage = () => {
   return (
     <>
       <div
-        className={`flex flex-col min-h-screen min-w-full ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+        className={`flex flex-col h-screen w-full overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
       >
         <motion.p
-          className={`text-4xl mx-auto my-4 ${theme === "Dark" ? "text-white" : "text-stone-800 font-semibold"}`}
+          className={`text-4xl mx-auto my-4 shrink-0 ${theme === "Dark" ? "text-white" : "text-stone-800 font-semibold"}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 2, delay: 0.5 }}
@@ -135,17 +166,17 @@ const MainPage = () => {
 
         {/* - Tela dividida - */}
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           {/* - Lado esquerdo: Meu código - */}
 
           <motion.div
-            className={`flex flex-col flex-1 px-4 py-3 ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+            className={`flex flex-col flex-1 px-4 py-3 overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
             <div
-              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
+              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
             >
               <div className="flex items-center">
                 <Code2 className="h-5 w-5 text-blue-600 mr-2" />
@@ -179,13 +210,13 @@ const MainPage = () => {
           {/* - Lado direito: Resposta do Codara - */}
 
           <motion.div
-            className={`flex flex-col flex-1 px-4 py-3 ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+            className={`flex flex-col flex-1 px-4 py-3 overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
             <div
-              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
+              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
             >
               <div className="flex items-center">
                 <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
@@ -197,7 +228,7 @@ const MainPage = () => {
               </div>
             </div>
 
-            <motion.div className="flex flex-col flex-1 space-y-2">
+            <motion.div className="flex flex-col flex-1 space-y-2 overflow-y-auto py-2">
               {/* - feedback de que está analisando - */}
 
               {isAnalyzing && (
@@ -224,7 +255,7 @@ const MainPage = () => {
                   <div className="flex flex-col">
                     <div className="flex flex-1 items-center gap-2 mb-1">
                       <AlertCircle className="h-6 w-6 text-red-500 mr-2" />
-                      <p className="font-bold text-xl text-red-500">
+                      <p className="font-bold text-lg text-red-500">
                         Erros Encontrados
                       </p>
                     </div>
@@ -262,7 +293,7 @@ const MainPage = () => {
                   <div className="flex flex-col">
                     <div className="flex flex-1 items-center gap-2 mb-1">
                       <Lightbulb className="h-6 w-6 text-blue-500 mr-2" />
-                      <p className="font-bold text-xl text-blue-500">
+                      <p className="font-bold text-lg text-blue-500">
                         Sugestões
                       </p>
                     </div>
@@ -301,7 +332,7 @@ const MainPage = () => {
                   <div className="flex flex-col">
                     <div className="flex flex-1 items-center gap-2 mb-1">
                       <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
-                      <p className="font-bold text-xl text-green-500">
+                      <p className="font-bold text-lg text-green-500">
                         Melhorias
                       </p>
                     </div>
@@ -328,7 +359,7 @@ const MainPage = () => {
 
               {!isAnalyzing && correctedCode && (
                 <motion.div
-                  className={`flex flex-1 rounded-lg my-6 max-w-[94%] ${theme === "Dark" ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
+                  className={`flex flex-1 rounded-lg my-6 max-w-[94%] min-h-64 ${theme === "Dark" ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
                   initial={{ y: 150, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.7 }}
@@ -342,7 +373,7 @@ const MainPage = () => {
                       </span>
 
                       <motion.button
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto h-10"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleCopy}

@@ -1,7 +1,7 @@
 import { createContext, useState, type ReactNode } from "react";
 import type { Patch } from "../types/patch";
 
-interface PatchContextType {
+export interface PatchContextType {
   updateTitle: string;
   setUpdateTitle: (updateTitle: string) => void;
   date: string;

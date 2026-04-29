@@ -1,5 +1,6 @@
 import { createContext, useState, type ReactNode } from "react";
-import { analyzeCode as analyzeCodeService } from "../service/CodeReviewService";
+import { analyzeCode as analyzeCodeService } from "../services/CodeReviewService";
+import { supabase } from "@/supabase/supabase";
 
 export interface CodeReviewContextType {
   /* - Dados do código - */
@@ -36,7 +37,43 @@ const CodeReviewProvider = ({ children }: { children: ReactNode }) => {
     setImprovement([]);
     setCorrectedCode("");
 
-    const parsed = await analyzeCodeService(code, chatId);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Usuário não autenticado!");
+    }
+
+    /* - salvando a mensagem que o usuário digitou - */
+
+    const { error: userError } = await supabase.from("messages").insert({
+      user_id: user.id,
+      chat_id: chatId,
+      content: code,
+      role: "user",
+    });
+
+    if (userError) {
+      throw new Error("Error:", userError);
+    }
+
+    const parsed = await analyzeCodeService(code);
+
+    /* - salvando a resposta do Codara - */
+
+    const { error: adminError } = await supabase.from("messages").insert({
+      user_id: user.id,
+      chat_id: chatId,
+      content: parsed.corrected_code,
+      role: "admin",
+      errors: parsed.errors ?? [],
+      suggestions: parsed.suggestions ?? [],
+      improvements: parsed.improvements ?? [],
+    });
+
+    if (adminError) {
+      throw new Error("Error:", adminError);
+    }
 
     setError(parsed.errors ?? []);
     setSuggestion(parsed.suggestions ?? []);
