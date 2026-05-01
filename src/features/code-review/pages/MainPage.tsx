@@ -12,15 +12,13 @@ import { useCodeReviewContext } from "../hooks/useCodeReviewContext";
 import { useAuthenticationContext } from "@/features/authentication/hooks/useAuthenticationContext";
 import { useChatContext } from "../hooks/useChatContext";
 import { supabase } from "@/supabase/supabase";
-import { createChat, updateChat } from "../services/ChatService";
+import { createChat, updateChat } from "../services/chatService";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
-import { generateChatTitle } from "../services/CodeReviewService";
-import { createPatch } from "../services/PatchService";
+import { generateChatTitle } from "../services/codeReviewService";
+import { createPatch } from "../services/patchService";
 import { useLocation } from "react-router-dom";
 
 const MainPage = () => {
-  /* - Puxando do context - */
-
   const {
     error,
     setError,
@@ -37,12 +35,8 @@ const MainPage = () => {
   const { selectedChatId, setSelectedChatId, fetchChats } = useChatContext();
   const { theme } = useThemeContext();
 
-  /* - Estados do código - */
-
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [code, setCode] = useState<string>("");
-
-  /* - Funções - */
 
   const location = useLocation();
 
@@ -63,9 +57,7 @@ const MainPage = () => {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      throw new Error("Usuário não Autenticado!");
-    }
+    if (!user) throw new Error("Usuário não Autenticado!");
 
     setIsAnalyzing(true);
 
@@ -96,8 +88,6 @@ const MainPage = () => {
       setIsAnalyzing(false);
     }
   };
-
-  /* - Buscando o ChatId no Supabase - */
 
   useEffect(() => {
     const getChatData = async () => {
@@ -143,6 +133,7 @@ const MainPage = () => {
       setCorrectedCode(data?.content ?? "");
       setCode(userMessage?.content ?? "");
     };
+
     getChatData();
   }, [selectedChatId]);
 
@@ -150,252 +141,224 @@ const MainPage = () => {
     navigator.clipboard.writeText(correctedCode);
   };
 
+  const dark = theme === "Dark";
+
   return (
-    <>
-      <div
-        className={`flex flex-col h-screen w-full overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+    <div
+      className={`flex flex-col w-full h-full overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+    >
+      {/* - Título - */}
+
+      <motion.p
+        className={`text-4xl mx-auto my-4 shrink-0 ${dark ? "text-white" : "text-stone-800 font-semibold"}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2, delay: 0.5 }}
       >
-        <motion.p
-          className={`text-4xl mx-auto my-4 shrink-0 ${theme === "Dark" ? "text-white" : "text-stone-800 font-semibold"}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 2, delay: 0.5 }}
+        Vamos ao trabalho, {name.split(" ")[0]}?
+      </motion.p>
+
+      {/* - Tela dividida - */}
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* - Lado esquerdo: Meu código - */}
+
+        <motion.div
+          className={`flex flex-col flex-1 min-h-0 mx-4 my-2 overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
         >
-          Vamos ao trabalho, {name.split(" ")[0]}?
-        </motion.p>
-
-        {/* - Tela dividida - */}
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* - Lado esquerdo: Meu código - */}
-
-          <motion.div
-            className={`flex flex-col flex-1 px-4 py-3 overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
+          <div
+            className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${dark ? "border-zinc-700" : "border-stone-300"}`}
           >
-            <div
-              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
-            >
-              <div className="flex items-center">
-                <Code2 className="h-5 w-5 text-blue-600 mr-2" />
-                <p
-                  className={`text-lg font-semibold ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
-                >
-                  Seu Código
-                </p>
-              </div>
-
-              <motion.button
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleAnalyze(code)}
-                disabled={isAnalyzing || !code.trim()}
+            <div className="flex items-center">
+              <Code2 className="h-5 w-5 text-blue-600 mr-2" />
+              <p
+                className={`text-lg font-semibold ${dark ? "text-white" : "text-stone-800"}`}
               >
-                <Play className="h-5 w-5 text-white" />
-                {isAnalyzing ? "Analisando..." : "Analisar"}
-              </motion.button>
+                Seu Código
+              </p>
             </div>
 
-            <textarea
-              className={`flex-1 rounded-lg resize-none focus:outline-none my-6 mx-4 p-4 ${theme === "Dark" ? "bg-black text-white placeholder:text-zinc-300" : "bg-white text-stone-800 placeholder:text-stone-400 border border-stone-200 shadow-sm"}`}
-              placeholder="Por onde você quer começar?"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </motion.div>
-
-          {/* - Lado direito: Resposta do Codara - */}
-
-          <motion.div
-            className={`flex flex-col flex-1 px-4 py-3 overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-          >
-            <div
-              className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${theme === "Dark" ? "border-zinc-700" : "border-stone-300"}`}
+            <motion.button
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleAnalyze(code)}
+              disabled={isAnalyzing || !code.trim()}
             >
-              <div className="flex items-center">
-                <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
-                <p
-                  className={`text-lg font-semibold ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
-                >
-                  Análise IA
-                </p>
-              </div>
-            </div>
+              <Play className="h-5 w-5 text-white" />
+              {isAnalyzing ? "Analisando..." : "Analisar"}
+            </motion.button>
+          </div>
 
-            <motion.div className="flex flex-col flex-1 space-y-2 overflow-y-auto py-2">
-              {/* - feedback de que está analisando - */}
+          <textarea
+            className={`flex-1 min-h-0 rounded-lg resize-none focus:outline-none my-6 mx-4 p-4 ${dark ? "bg-black text-white placeholder:text-zinc-300" : "bg-white text-stone-800 placeholder:text-stone-400 border border-stone-200 shadow-sm"}`}
+            placeholder="Por onde você quer começar?"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        </motion.div>
+
+        {/* - Lado direito: Resposta do Codara - */}
+
+        <motion.div
+          className={`flex flex-col flex-1 min-h-0 mx-2 mt-3 mb-8 overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          <div
+            className={`flex w-full items-center justify-between h-15 border-b-2 px-4 py-2 shrink-0 ${dark ? "border-zinc-700" : "border-stone-300"}`}
+          >
+            <div className="flex items-center">
+              <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+              <p
+                className={`text-lg font-semibold ${dark ? "text-white" : "text-stone-800"}`}
+              >
+                Análise IA
+              </p>
+            </div>
+          </div>
+
+          {/* - Container scrollável - */}
+
+          <div className="flex-1 min-h-0 overflow-y-auto py-2 px-2">
+            <div className="flex flex-col space-y-2">
+              {/* - Feedback de que está analisando - */}
 
               {isAnalyzing && (
                 <p
-                  className={`text-lg p-4 ${theme === "Dark" ? "text-zinc-400" : "text-stone-500"}`}
+                  className={`text-lg p-4 ${dark ? "text-zinc-400" : "text-stone-500"}`}
                 >
                   Analisando seu código...
                 </p>
               )}
 
-              {/* - Seção de erros encontrados - */}
+              {/* - Erros encontrados - */}
 
               {!isAnalyzing && error.length > 0 && (
                 <motion.div
-                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${
-                    theme === "Dark"
-                      ? "bg-red-950/40 border-red-800/70"
-                      : "bg-red-50 border-red-200"
-                  }`}
+                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${dark ? "bg-red-950/40 border-red-800/70" : "bg-red-50 border-red-200"}`}
                   initial={{ x: 100, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
-                  <div className="flex flex-col">
-                    <div className="flex flex-1 items-center gap-2 mb-1">
-                      <AlertCircle className="h-6 w-6 text-red-500 mr-2" />
-                      <p className="font-bold text-lg text-red-500">
-                        Erros Encontrados
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col flex-1 font-semibold">
-                      <ul className="space-y-4 p-2">
-                        {error.map((error, index) => (
-                          <motion.li
-                            className={`text-sm ${theme === "Dark" ? "text-white" : "text-black"}`}
-                            key={index}
-                          >
-                            <span className="text-red-500 mr-2">•</span>
-                            {error.charAt(0).toUpperCase() + error.slice(1)}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle className="h-6 w-6 text-red-500" />
+                    <p className="font-bold text-lg text-red-500">
+                      Erros Encontrados
+                    </p>
                   </div>
+                  <ul className="space-y-4 p-2">
+                    {error.map((err, index) => (
+                      <motion.li
+                        className={`text-sm font-semibold ${dark ? "text-white" : "text-black"}`}
+                        key={index}
+                      >
+                        <span className="text-red-500 mr-2">•</span>
+                        {err.charAt(0).toUpperCase() + err.slice(1)}
+                      </motion.li>
+                    ))}
+                  </ul>
                 </motion.div>
               )}
 
-              {/* - Seção de sugestões do Codara - */}
+              {/* - Sugestões - */}
 
               {!isAnalyzing && suggestion.length > 0 && (
                 <motion.div
-                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${
-                    theme === "Dark"
-                      ? "bg-blue-950/40 border-blue-800/70"
-                      : "bg-blue-50 border-blue-200"
-                  }`}
+                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${dark ? "bg-blue-950/40 border-blue-800/70" : "bg-blue-50 border-blue-200"}`}
                   initial={{ x: 100, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.3 }}
                 >
-                  <div className="flex flex-col">
-                    <div className="flex flex-1 items-center gap-2 mb-1">
-                      <Lightbulb className="h-6 w-6 text-blue-500 mr-2" />
-                      <p className="font-bold text-lg text-blue-500">
-                        Sugestões
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col flex-1 font-semibold">
-                      <ul className="space-y-4 p-2">
-                        {suggestion.map((suggestion, index) => (
-                          <motion.li
-                            className={`text-sm ${theme === "Dark" ? "text-white" : "text-black"}`}
-                            key={index}
-                          >
-                            <span className="text-blue-500 mr-2">•</span>
-                            {suggestion.charAt(0).toUpperCase() +
-                              suggestion.slice(1)}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Lightbulb className="h-6 w-6 text-blue-500" />
+                    <p className="font-bold text-lg text-blue-500">Sugestões</p>
                   </div>
+                  <ul className="space-y-4 p-2">
+                    {suggestion.map((sug, index) => (
+                      <motion.li
+                        className={`text-sm font-semibold ${dark ? "text-white" : "text-black"}`}
+                        key={index}
+                      >
+                        <span className="text-blue-500 mr-2">•</span>
+                        {sug.charAt(0).toUpperCase() + sug.slice(1)}
+                      </motion.li>
+                    ))}
+                  </ul>
                 </motion.div>
               )}
 
-              {/* - Seção de melhorias sugeridas - */}
+              {/* - Melhorias - */}
 
               {!isAnalyzing && improvement.length > 0 && (
                 <motion.div
-                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${
-                    theme === "Dark"
-                      ? "bg-green-950/40 border-green-800/70"
-                      : "bg-green-50 border-green-200"
-                  }`}
+                  className={`rounded-lg p-4 mt-6 max-w-[94%] border ${dark ? "bg-green-950/40 border-green-800/70" : "bg-green-50 border-green-200"}`}
                   initial={{ x: 100, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.5 }}
                 >
-                  <div className="flex flex-col">
-                    <div className="flex flex-1 items-center gap-2 mb-1">
-                      <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
-                      <p className="font-bold text-lg text-green-500">
-                        Melhorias
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col flex-1 font-semibold">
-                      <ul className="space-y-4 p-2">
-                        {improvement.map((improvement, index) => (
-                          <motion.li
-                            className={`text-sm ${theme === "Dark" ? "text-white" : "text-black"}`}
-                            key={index}
-                          >
-                            <span className="text-green-500 mr-2">•</span>
-                            {improvement.charAt(0).toUpperCase() +
-                              improvement.slice(1)}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                    <p className="font-bold text-lg text-green-500">
+                      Melhorias
+                    </p>
                   </div>
+                  <ul className="space-y-4 p-2">
+                    {improvement.map((imp, index) => (
+                      <motion.li
+                        className={`text-sm font-semibold ${dark ? "text-white" : "text-black"}`}
+                        key={index}
+                      >
+                        <span className="text-green-500 mr-2">•</span>
+                        {imp.charAt(0).toUpperCase() + imp.slice(1)}
+                      </motion.li>
+                    ))}
+                  </ul>
                 </motion.div>
               )}
 
-              {/* - Seção de código corrigido - */}
+              {/* - Código corrigido - */}
 
               {!isAnalyzing && correctedCode && (
                 <motion.div
-                  className={`flex flex-1 rounded-lg my-6 max-w-[94%] min-h-64 ${theme === "Dark" ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
+                  className={`flex flex-col rounded-lg mt-6 max-w-[94%] min-h-70 max-h-96 ${dark ? "bg-zinc-800 border border-zinc-700" : "bg-white border border-stone-200 shadow-sm"}`}
                   initial={{ y: 150, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.7 }}
                 >
-                  <div className="flex flex-col flex-1 px-6 py-2 mt-2">
-                    <div className="flex flex-1">
-                      <span
-                        className={`text-lg font-semibold ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
-                      >
-                        Código Corrigido
-                      </span>
-
-                      <motion.button
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleCopy}
-                        disabled={isAnalyzing || !code.trim()}
-                      >
-                        Copiar
-                      </motion.button>
-                    </div>
-
-                    <textarea
-                      className={`w-full h-full rounded-lg resize-none my-4 p-4 text-lg focus:outline-none ${theme === "Dark" ? "bg-black text-white placeholder:text-zinc-300" : "bg-stone-50 text-stone-800 placeholder:text-stone-400 border border-stone-200"}`}
-                      value={correctedCode}
-                      readOnly
-                    />
+                  <div className="flex items-center px-6 py-4 shrink-0">
+                    <span
+                      className={`text-lg font-semibold ${dark ? "text-white" : "text-stone-800"}`}
+                    >
+                      Código Corrigido
+                    </span>
+                    <motion.button
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg cursor-pointer disabled:opacity-50 px-6 py-2 ml-auto"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCopy}
+                      disabled={isAnalyzing || !correctedCode}
+                    >
+                      Copiar
+                    </motion.button>
                   </div>
+
+                  <textarea
+                    className={`flex-1 min-h-0 rounded-b-lg resize-none mx-4 mb-4 p-4 text-lg focus:outline-none ${dark ? "bg-black text-white" : "bg-stone-50 text-stone-800 border border-stone-200"}`}
+                    value={correctedCode}
+                    readOnly
+                  />
                 </motion.div>
               )}
-            </motion.div>
-          </motion.div>
-        </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useChatContext } from "@/features/code-review";
-import { deleteChat } from "@/features/code-review/services/ChatService";
+import { deleteChat } from "@/features/code-review/services/chatService";
 import { useThemeContext } from "@/shared/hooks/useThemeContext";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -19,7 +19,7 @@ const ChatDeleteModal: React.FC<ChatDeleteModalProps> = ({
   const { theme } = useThemeContext();
 
   return (
-    <div className="flex items-center justify-center fixed inset-0 bg-black/60 min-h-screen w-full z-50">
+    <div className="flex items-center justify-center fixed inset-0 bg-black/60 min-h-screen w-full z-50 ">
       <div
         className={`relative flex rounded-lg w-[22%] h-fit border ${
           theme === "Dark"

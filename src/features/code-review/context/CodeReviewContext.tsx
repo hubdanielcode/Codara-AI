@@ -1,5 +1,5 @@
 import { createContext, useState, type ReactNode } from "react";
-import { analyzeCode as analyzeCodeService } from "../services/CodeReviewService";
+import { analyzeCode as analyzeCodeService } from "../services/codeReviewService";
 import { supabase } from "@/supabase/supabase";
 
 export interface CodeReviewContextType {

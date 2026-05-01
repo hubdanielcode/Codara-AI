@@ -93,14 +93,17 @@ const PrivacyPolicy = () => {
                 <span className="text-blue-600 mr-2">•</span>
                 Endereço de e-mail utilizado no cadastro
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Códigos enviados para análise pela IA
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Histórico de conversas e correções realizadas
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Dados de uso da plataforma para melhorias do serviço
@@ -129,14 +132,17 @@ const PrivacyPolicy = () => {
                 <span className="text-blue-600 mr-2">•</span>
                 Para fornecer o serviço de revisão de código com IA
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Para salvar seu histórico de análises e permitir revisitá-las
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Para melhorar continuamente a qualidade das respostas da IA
               </li>
+
               <li>
                 <span className="text-blue-600 mr-2">•</span>
                 Nunca vendemos ou compartilhamos seus dados com terceiros

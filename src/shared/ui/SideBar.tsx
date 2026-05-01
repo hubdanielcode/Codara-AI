@@ -18,12 +18,17 @@ import { ChatDeleteModal } from "./ChatDeleteModal";
 import {
   deletePatch,
   getPatches,
-} from "@/features/code-review/services/PatchService";
+} from "@/features/code-review/services/patchService";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { PhotoCropModal } from "./PhotoCropModal";
-import { createChat } from "@/features/code-review/services/ChatService";
+import { createChat } from "@/features/code-review/services/chatService";
 
-const SideBar = () => {
+export interface SideBarProps {
+  isMobile: boolean;
+  onClose: () => void;
+}
+
+const SideBar = ({ isMobile, onClose }: SideBarProps) => {
   /* - Puxando do context - */
 
   const { theme, toggleTheme } = useThemeContext();
@@ -129,7 +134,7 @@ const SideBar = () => {
   return (
     <>
       <motion.div
-        className={`flex flex-col whitespace-nowrap space-y-4 border-r overflow-hidden font-semibold ${
+        className={`flex flex-col h-full whitespace-nowrap space-y-4 border-r overflow-hidden font-semibold  ${
           theme === "Dark"
             ? "bg-zinc-800 border-zinc-700 text-white"
             : "bg-white border-stone-200 text-black"

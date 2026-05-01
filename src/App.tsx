@@ -16,27 +16,52 @@ import { useThemeContext } from "./shared/hooks/useThemeContext";
 import { AppProviders } from "./shared/providers/AppProviders";
 import { PrivacyPolicy } from "./shared/pages/PrivacyPolicy";
 import { TermsOfUse } from "./shared/pages/TermsOfUse";
+import { Code2 } from "lucide-react";
 
 const AppLayout = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
   const { theme } = useThemeContext();
+
+  useEffect(() => {
+    const handleResizeWindow = () => {
+      if (window.innerWidth > 768) {
+        setIsMobile(true);
+      } else {
+        setIsMobile(false);
+      }
+      handleResizeWindow();
+      window.addEventListener("resize", handleResizeWindow);
+      return () => window.removeEventListener("resize", handleResizeWindow);
+    };
+  }, []);
 
   return (
     <div
-      className={`min-h-screen flex flex-col ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+      className={`h-dvh flex flex-col overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
     >
       <Header openSideBar={() => setIsSideBarOpen(!isSideBarOpen)} />
 
-      <main className="flex flex-1">
-        <AnimatePresence>{isSideBarOpen && <SideBar />}</AnimatePresence>
+      <main className="flex flex-1 overflow-hidden min-h-0">
+        <AnimatePresence>
+          {isSideBarOpen && (
+            <SideBar
+              isMobile={isMobile}
+              onClose={() => setIsSideBarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
         <motion.div
-          className="flex flex-1"
+          className="flex flex-1 overflow-hidden"
           initial={{ x: 0 }}
           exit={{ x: 0 }}
           animate={{ x: 20 }}
           transition={{ duration: 0.6 }}
         >
-          <Outlet />
+          <div className="flex flex-1 overflow-hidden">
+            <Outlet />
+          </div>
         </motion.div>
       </main>
 
@@ -47,6 +72,7 @@ const AppLayout = () => {
 
 const App = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadingDots, setLoadingDots] = useState<string[]>([]);
   const [session, setSession] = useState<Session | null>(null);
 
   const navigate = useNavigate();
@@ -79,13 +105,58 @@ const App = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLoadingDots((prev) => {
+        if (prev.length > 3) {
+          return [];
+        } else {
+          return [...prev, "."];
+        }
+      });
+    }, 600);
+    return () => clearInterval(interval);
+  }, []);
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center mx-auto text-5xl font-bold bg-zinc-950">
-        <span>Carregando...</span>
+      <div className="flex flex-col justify-center items-center h-full bg-zinc-950">
+        <div className="flex flex-col justify-center items-center p-6 gap-3">
+          <div className="flex items-center justify-center h-20 w-20 bg-blue-600 rounded-xl">
+            <Code2 className="h-12 w-12 text-white" />
+          </div>
+
+          <span className="text-white text-3xl font-bold mt-3">Codara IA</span>
+
+          <motion.span className="flex w-50 whitespace-nowrap text-zinc-600 mt-3 text-lg">
+            Carregando sua sessão
+            <motion.span className="flex">
+              {loadingDots.map((dot, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ x: 0, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: index * 0.2 }}
+                >
+                  {dot}
+                </motion.div>
+              ))}
+            </motion.span>
+          </motion.span>
+        </div>
+
+        <div className="relative h-2 w-70 bg-zinc-700 rounded-xl">
+          <motion.div
+            className="absolute top-0 left-0 h-2 bg-blue-600 rounded-xl"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ repeat: Infinity }}
+          />
+        </div>
       </div>
     );
   }
+
   return (
     <div className="select-none h-full">
       <AppProviders session={session}>

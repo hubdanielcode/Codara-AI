@@ -9,12 +9,11 @@
 }
 
 /* - Tema escuro - */
-
 :root.dark {
   --autofill-bg: #27272a;
   --autofill-text: #ffffff;
   --scrollbar-thumb: #3f3f46;
-  --scrollbar-track: #ffffff !important;
+  --scrollbar-track: #27272a;
 }
 
 input:-webkit-autofill,
@@ -30,7 +29,9 @@ input:-webkit-autofill:focus {
   scrollbar-width: thin;
 }
 
+#root,
 html,
 body {
   overflow-x: hidden;
+  height: 100dvh;
 }

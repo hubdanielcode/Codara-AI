@@ -1,4 +1,4 @@
-import { getChats } from "../services/ChatService";
+import { getChats } from "../services/chatService";
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import type { Chat } from "../types/chat";
 

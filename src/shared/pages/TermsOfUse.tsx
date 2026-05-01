@@ -37,6 +37,7 @@ const TermsOfUse = () => {
 
           <div className="flex items-center gap-2 ml-4">
             <ScrollText className="h-5 w-5 text-blue-600" />
+
             <p
               className={`text-lg font-semibold ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
             >
