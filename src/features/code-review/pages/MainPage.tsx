@@ -17,8 +17,11 @@ import { useThemeContext } from "@/shared/hooks/useThemeContext";
 import { generateChatTitle } from "../services/codeReviewService";
 import { createPatch } from "../services/patchService";
 import { useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router";
 
 const MainPage = () => {
+  /* - Puxando do context - */
+
   const {
     error,
     setError,
@@ -34,6 +37,12 @@ const MainPage = () => {
   const { name } = useAuthenticationContext();
   const { selectedChatId, setSelectedChatId, fetchChats } = useChatContext();
   const { theme } = useThemeContext();
+  const { isMobile, isLandscape } = useOutletContext<{
+    isMobile: boolean;
+    isLandscape: boolean;
+  }>();
+
+  /* - Estados do código - */
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [code, setCode] = useState<string>("");
@@ -142,15 +151,16 @@ const MainPage = () => {
   };
 
   const dark = theme === "Dark";
+  const isSmallScreen = isMobile || isLandscape;
 
   return (
     <div
-      className={`flex flex-col w-full h-full overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+      className={`flex flex-col ${isSmallScreen ? "w-fit" : "w-full"} h-full overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
     >
       {/* - Título - */}
 
       <motion.p
-        className={`text-4xl mx-auto my-4 shrink-0 ${dark ? "text-white" : "text-stone-800 font-semibold"}`}
+        className={`${isSmallScreen ? "text-2xl" : "text-4xl"} mx-auto my-4 shrink-0 ${dark ? "text-white" : "text-stone-800 font-semibold"}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 2, delay: 0.5 }}
@@ -160,11 +170,13 @@ const MainPage = () => {
 
       {/* - Tela dividida - */}
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div
+        className={`flex flex-1 min-h-0 overflow-hidden ${isSmallScreen ? "flex-col overflow-y-auto" : "flex-row"}`}
+      >
         {/* - Lado esquerdo: Meu código - */}
 
         <motion.div
-          className={`flex flex-col flex-1 min-h-0 mx-4 my-2 overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+          className={`flex flex-col mx-4 my-2 overflow-hidden ${isSmallScreen ? "h-80 shrink-0" : "flex-1 min-h-0"} ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
@@ -204,7 +216,7 @@ const MainPage = () => {
         {/* - Lado direito: Resposta do Codara - */}
 
         <motion.div
-          className={`flex flex-col flex-1 min-h-0 mx-2 mt-3 mb-8 overflow-hidden ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
+          className={`flex flex-col mx-2 mt-3 mb-8 overflow-hidden ${isSmallScreen ? "h-auto shrink-0" : "flex-1 min-h-0"} ${dark ? "bg-zinc-900" : "bg-stone-100"}`}
           initial={{ x: 50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}

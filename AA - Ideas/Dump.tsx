@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sideBarIcons } from "../utils/sideBarIcons";
+createChat;
 import { uploadUserPhoto } from "@/features/authentication/services/authenticationService";
 import { supabase } from "@/supabase/supabase";
 import { FaTrashAlt, FaPenAlt } from "react-icons/fa";
@@ -24,7 +25,6 @@ import { createChat } from "@/features/code-review/services/chatService";
 
 export interface SideBarProps {
   isMobile: boolean;
-  isLandscape: boolean;
   onClose: () => void;
 }
 
@@ -133,29 +133,17 @@ const SideBar = ({ isMobile, onClose }: SideBarProps) => {
 
   return (
     <>
-      {isMobile && (
-        <motion.div
-          className="fixed inset-0 bg-black/80 z-40"
-          onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        />
-      )}
-
       {/* - SideBar propriamente dita - */}
 
       <motion.div
-        className={`flex flex-col h-full whitespace-nowrap space-y-4 border-r overflow-hidden font-semibolds 
-          ${isMobile ? "fixed inset-y-0 left-0 z-50 w-64" : "relative"}
-          ${
-            theme === "Dark"
-              ? "bg-zinc-800 border-zinc-700 text-white"
-              : "bg-white border-stone-200 text-black"
-          }`}
-        initial={isMobile ? { x: -256, opacity: 0 } : { width: 0, opacity: 0 }}
-        animate={isMobile ? { x: 0, opacity: 1 } : { width: 256, opacity: 1 }}
-        exit={isMobile ? { x: -256, opacity: 0 } : { width: 0, opacity: 0 }}
+        className={`flex flex-col h-full whitespace-nowrap space-y-4 border-r overflow-hidden font-semibolds ${
+          theme === "Dark"
+            ? "bg-zinc-800 border-zinc-700 text-white"
+            : "bg-white border-stone-200 text-black"
+        }`}
+        initial={{ width: 0, opacity: 0 }}
+        exit={{ width: 0, opacity: 0 }}
+        animate={{ width: 256, opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
         <motion.div

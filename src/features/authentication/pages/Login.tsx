@@ -152,7 +152,7 @@ const Login = () => {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="******"
+                  placeholder="••••••"
                 />
               </div>
             </div>

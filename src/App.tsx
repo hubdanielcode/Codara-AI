@@ -19,34 +19,49 @@ import { TermsOfUse } from "./shared/pages/TermsOfUse";
 import { Code2 } from "lucide-react";
 
 const AppLayout = () => {
-  const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  /* - Puxando do context - */
+
   const { theme } = useThemeContext();
 
+  /* - Estados para definir o mobile - */
+
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isLandscape, setIsLandscape] = useState<boolean>(false);
+
+  /* - Estado da sideBar - */
+
+  const [isSideBarOpen, setIsSideBarOpen] = useState<boolean>(false);
+
   useEffect(() => {
-    const handleResizeWindow = () => {
-      if (window.innerWidth > 768) {
-        setIsMobile(true);
-      } else {
-        setIsMobile(false);
-      }
-      handleResizeWindow();
-      window.addEventListener("resize", handleResizeWindow);
-      return () => window.removeEventListener("resize", handleResizeWindow);
+    const handleResize = () => {
+      const mobile =
+        window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+      const landscape =
+        window.innerWidth < 1024 && window.innerWidth > window.innerHeight;
+
+      setIsMobile(mobile);
+      setIsLandscape(landscape);
     };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
     <div
-      className={`h-dvh flex flex-col overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
+      className={`h-dvh w- flex flex-col overflow-hidden ${theme === "Dark" ? "bg-zinc-900" : "bg-stone-100"}`}
     >
       <Header openSideBar={() => setIsSideBarOpen(!isSideBarOpen)} />
 
-      <main className="flex flex-1 overflow-hidden min-h-0">
+      <main
+        className={`flex flex-1 min-h-0 ${isMobile ? "overflow-y-auto" : "overflow-hidden"}`}
+      >
         <AnimatePresence>
           {isSideBarOpen && (
             <SideBar
               isMobile={isMobile}
+              isLandscape={isLandscape}
               onClose={() => setIsSideBarOpen(false)}
             />
           )}
@@ -54,14 +69,11 @@ const AppLayout = () => {
 
         <motion.div
           className="flex flex-1 overflow-hidden"
-          initial={{ x: 0 }}
-          exit={{ x: 0 }}
-          animate={{ x: 20 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex flex-1 overflow-hidden">
-            <Outlet />
-          </div>
+          <Outlet context={{ isMobile, isLandscape }} />
         </motion.div>
       </main>
 
@@ -118,6 +130,8 @@ const App = () => {
     return () => clearInterval(interval);
   }, []);
 
+  /* - Quando isLoading - */
+
   if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center h-full bg-zinc-950">
@@ -156,6 +170,8 @@ const App = () => {
       </div>
     );
   }
+
+  /* - Quando !isLoading - */
 
   return (
     <div className="select-none h-full">

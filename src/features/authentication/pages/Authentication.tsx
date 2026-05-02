@@ -186,7 +186,7 @@ const Authentication = () => {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="******"
+                  placeholder="••••••"
                 />
               </div>
 
@@ -211,7 +211,7 @@ const Authentication = () => {
                   id="confirm-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="******"
+                  placeholder="••••••"
                 />
               </div>
 

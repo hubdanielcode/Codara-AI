@@ -28,12 +28,12 @@ const Header = ({ openSideBar }: { openSideBar: () => void }) => {
 
         <div>
           <p
-            className={`font-semibold text-lg ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
+            className={`font-semibold text-base sm:text-lg mb-1 sm:mb-0 ${theme === "Dark" ? "text-white" : "text-stone-800"}`}
           >
             Codara AI
           </p>
           <p
-            className={`font-semibold text-sm ${theme === "Dark" ? "text-zinc-400" : "text-stone-500"}`}
+            className={`font-semibold text-xs sm:text:sm ${theme === "Dark" ? "text-zinc-400" : "text-stone-500"}`}
           >
             Sessão iniciada em {today}, às {hours}.
           </p>
