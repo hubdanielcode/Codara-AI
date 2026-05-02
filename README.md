@@ -4,7 +4,7 @@ Aplicação web de análise inteligente de código desenvolvida com React e Type
 
 O projeto foi desenvolvido com foco em boas práticas de arquitetura frontend, organização escalável por features e integração com backend via BaaS.
 
-🔗 Deploy: https://seu-deploy-aqui.vercel.app/ <br>
+🔗 Deploy: https://codara-ai.vercel.app/ <br>
 🔗 Repositório: https://github.com/hubdanielcode/Codara-AI
 
 ---
