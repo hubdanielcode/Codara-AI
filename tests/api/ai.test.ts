@@ -59,11 +59,11 @@ test("should reject methods other than POST", async () => {
 });
 
 test("should reject requests without a token", async () => {
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest({ headers: {} }), res);
+  await handler(validRequest({ headers: {} }), response);
 
-  expect(res.statusCode).toBe(401);
+  expect(response.statusCode).toBe(401);
   expect(fetchMock).not.toHaveBeenCalled();
 });
 
@@ -94,49 +94,49 @@ test("should validate the token against Supabase", async () => {
 
 test("should return 500 when Supabase is unreachable", async () => {
   fetchMock.mockRejectedValueOnce(new Error("network"));
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest(), res);
+  await handler(validRequest(), response);
 
-  expect(res.statusCode).toBe(500);
+  expect(response.statusCode).toBe(500);
 });
 
 test("should reject an invalid prompt", async () => {
   mockSupabaseOk();
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest({ body: { prompt: "" } }), res);
+  await handler(validRequest({ body: { prompt: "" } }), response);
 
-  expect(res.statusCode).toBe(400);
+  expect(response.statusCode).toBe(400);
 });
 
 test("should reject a prompt that is too long", async () => {
   mockSupabaseOk();
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest({ body: { prompt: "a".repeat(20001) } }), res);
+  await handler(validRequest({ body: { prompt: "a".repeat(20001) } }), response);
 
-  expect(res.statusCode).toBe(400);
+  expect(response.statusCode).toBe(400);
 });
 
 test("should accept a JSON string body", async () => {
   mockSupabaseOk();
   mockGroqOk("resposta");
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest({ body: JSON.stringify({ prompt: "analise isso" }) }), res);
+  await handler(validRequest({ body: JSON.stringify({ prompt: "analise isso" }) }), response);
 
-  expect(res.statusCode).toBe(200);
+  expect(response.statusCode).toBe(200);
 });
 
 test("should return 500 when GROQ_API_KEY is not configured", async () => {
   vi.stubEnv("GROQ_API_KEY", "");
   mockSupabaseOk();
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest(), res);
+  await handler(validRequest(), response);
 
-  expect(res.statusCode).toBe(500);
+  expect(response.statusCode).toBe(500);
 });
 
 test("should call Groq with the key, the model and the prompt", async () => {
@@ -160,12 +160,12 @@ test("should call Groq with the key, the model and the prompt", async () => {
 test("should return the AI content on success", async () => {
   mockSupabaseOk();
   mockGroqOk("resposta da IA");
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest(), res);
+  await handler(validRequest(), response);
 
-  expect(res.statusCode).toBe(200);
-  expect(res.body).toEqual({ content: "resposta da IA" });
+  expect(response.statusCode).toBe(200);
+  expect(response.body).toEqual({ content: "resposta da IA" });
 });
 
 test("should return 502 without leaking details when Groq fails", async () => {
@@ -175,20 +175,20 @@ test("should return 502 without leaking details when Groq fails", async () => {
     status: 401,
     text: () => Promise.resolve("invalid_api_key gsk_segredo"),
   });
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest(), res);
+  await handler(validRequest(), response);
 
-  expect(res.statusCode).toBe(502);
-  expect(JSON.stringify(res.body)).not.toContain("gsk_");
+  expect(response.statusCode).toBe(502);
+  expect(JSON.stringify(response.body)).not.toContain("gsk_");
 });
 
 test("should return 502 when the request to Groq throws", async () => {
   mockSupabaseOk();
   fetchMock.mockRejectedValueOnce(new Error("network"));
-  const res = createResponse();
+  const response = createResponse();
 
-  await handler(validRequest(), res);
+  await handler(validRequest(), response);
 
-  expect(res.statusCode).toBe(502);
+  expect(response.statusCode).toBe(502);
 });

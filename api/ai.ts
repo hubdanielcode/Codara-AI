@@ -111,7 +111,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     if (!groqResponse.ok) {
       const detail = await groqResponse.text();
 
-      console.error("Erro da Groq:", response.status, detail.slice(0, 300));
+      console.error("Erro da Groq:", groqResponse.status, detail.slice(0, 300));
 
       return response.status(502).json({ error: "A IA não respondeu. Tente novamente." });
     }

@@ -32,11 +32,14 @@ const callAI = async (prompt: string): Promise<string> => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
 
-    console.error("Erro da API /api/ai:", response.status, errorData);
+    const friendlyMessage =
+      response.status === 401
+        ? "Sua sessão expirou. Entre novamente."
+        : response.status >= 500
+          ? "Não foi possível analisar o código agora. Tente novamente."
+          : `Erro do servidor (${response.status}).`;
 
-    throw new Error(
-      errorData?.error ?? (response.status === 401 ? "Sua sessão expirou. Entre novamente." : `Erro do servidor (${response.status}).`),
-    );
+    throw new Error(errorData?.error ?? friendlyMessage);
   }
 
   const data = await response.json().catch(() => null);
