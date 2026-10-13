@@ -1,11 +1,10 @@
 import { motion } from "motion/react";
-import { Code2, Lock, Mail, User } from "lucide-react";
+import { CheckCircle2, Code2, Lock, Mail, User } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useAuthenticationContext } from "../hooks/useAuthenticationContext";
 import { regex, masks } from "@/shared";
 import { supabase } from "@/supabase/supabase";
-import { createUser } from "../services/authenticationService";
 
 const Authentication = () => {
   /* - Estados do Usuário - */
@@ -19,11 +18,16 @@ const Authentication = () => {
 
   const [signUpError, setSignUpError] = useState<string>("");
 
+  /* - Estados do envio e da confirmação por e-mail - */
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [emailSent, setEmailSent] = useState<boolean>(false);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const [resendMessage, setResendMessage] = useState<string>("");
+
   /* - Estados do checkbox - */
 
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
-
-  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +39,9 @@ const Authentication = () => {
       return setSignUpError("Preencha todos os campos!");
     }
 
-    if (!regex.name.test(name)) {
+    const cleanName = name.trim();
+
+    if (!regex.name.test(cleanName)) {
       return setSignUpError("Nome inválido.");
     }
 
@@ -51,17 +57,58 @@ const Authentication = () => {
       return setSignUpError("As senhas não coincidem.");
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { name: cleanName },
+        },
+      });
+
+      if (error) {
+        return setSignUpError(error.message);
+      }
+
+      setSignUpError("");
+      setEmailSent(true);
+      setResendCooldown(60);
+    } catch {
+      setSignUpError("Não foi possível criar a conta. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* - Reenviar o e-mail de confirmação - */
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
 
     if (error) {
-      return setSignUpError(error.message);
+      return setResendMessage(error.message);
     }
 
-    await createUser({ name, email, user_id: data.user!?.id });
-
-    setSignUpError("");
-    navigate("/");
+    setResendMessage("E-mail reenviado!");
+    setResendCooldown(60);
   };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   /* - Criando a referência para fechar o erro ao clicar fora - */
 
@@ -79,6 +126,62 @@ const Authentication = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  /* - Tela exibida depois do cadastro: pede para confirmar o e-mail - */
+
+  if (emailSent) {
+    return (
+      <div className="flex justify-center items-center p-4 bg-zinc-950 min-h-screen">
+        <motion.div
+          className="w-full max-w-md bg-zinc-900 rounded-2xl p-8 border border-zinc-800 text-center"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.7 }}
+          data-testid="email-confirmation"
+        >
+          <motion.div
+            className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, stiffness: 250, type: "spring" }}
+          >
+            <Mail className="h-8 w-8 text-white" />
+          </motion.div>
+
+          <p className="text-white font-bold text-2xl mb-2">Confirme seu e-mail</p>
+
+          <p className="text-zinc-400 mb-4">
+            Enviamos um link de confirmação para <span className="text-white font-semibold break-all">{email}</span>.
+          </p>
+
+          <div className="flex items-start gap-3 text-left bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-6">
+            <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-zinc-300">
+              Abra seu e-mail e clique no link para ativar sua conta. Se não encontrar, olhe também a caixa de spam.
+            </p>
+          </div>
+
+          <button
+            className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-lg transition-colors cursor-pointer mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={handleResend}
+            disabled={resendCooldown > 0}
+          >
+            {resendCooldown > 0 ? `Reenviar e-mail em ${resendCooldown}s` : "Reenviar e-mail"}
+          </button>
+
+          <p className="min-h-5 text-sm text-zinc-400 mb-3">{resendMessage}</p>
+
+          <Link
+            className="text-blue-500 hover:text-blue-400 transition-colors font-semibold text-sm"
+            to="/"
+          >
+            Já confirmei, ir para o login
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center p-4 bg-zinc-950 min-h-screen">
@@ -105,9 +208,7 @@ const Authentication = () => {
             Criar Conta
           </p>
 
-          <p className="text-zinc-400 font-semibold">
-            Comece a revisar seu código agora mesmo.
-          </p>
+          <p className="text-zinc-400 font-semibold">Comece a revisar seu código agora mesmo.</p>
         </div>
 
         <motion.div
@@ -182,9 +283,7 @@ const Authentication = () => {
                 />
               </div>
 
-              <p className="text-sm text-zinc-400 mt-2">
-                Mínimo de 8 caracteres
-              </p>
+              <p className="text-sm text-zinc-400 mt-2">Mínimo de 8 caracteres</p>
             </div>
 
             <div>
@@ -207,9 +306,7 @@ const Authentication = () => {
                 />
               </div>
 
-              <p className="text-sm text-zinc-400 mt-2">
-                Mínimo de 8 caracteres
-              </p>
+              <p className="text-sm text-zinc-400 mt-2">Mínimo de 8 caracteres</p>
             </div>
 
             {/* - Checkbox de termos - */}
@@ -248,9 +345,9 @@ const Authentication = () => {
               whileTap={{ scale: 0.95 }}
               type="submit"
               ref={signUpRef}
-              disabled={!acceptedTerms}
+              disabled={!acceptedTerms || isSubmitting}
             >
-              Criar Conta
+              {isSubmitting ? "Criando conta..." : "Criar Conta"}
             </motion.button>
           </form>
 
