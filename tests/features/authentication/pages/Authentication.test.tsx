@@ -1,9 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { Authentication } from "@/features/authentication/pages/Authentication";
 import { MemoryRouter, Routes, Route } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { supabase } from "@/supabase/supabase";
-import { createUser } from "@/features/authentication/services/authenticationService";
 import { useAuthenticationContext } from "@/features/authentication/hooks/useAuthenticationContext";
 
 /* - Criando o mock para simular a chamada do supabase nos testes - */
@@ -17,14 +16,9 @@ vi.mock("@/supabase/supabase", () => ({
           error: null,
         }),
       ),
+      resend: vi.fn(() => Promise.resolve({ error: null })),
     },
   },
-}));
-
-/* - Criando o mock do serviço de autenticação - */
-
-vi.mock("@/features/authentication/services/authenticationService", () => ({
-  createUser: vi.fn(() => Promise.resolve()),
 }));
 
 /* - Criando o mock do contexto de autenticação - */
@@ -110,6 +104,15 @@ const renderComponentWithFilledContext = () => {
   );
 };
 
+/* - Preenche as senhas, aceita os termos e envia o formulário - */
+
+const fillAndSubmit = async (user: ReturnType<typeof userEvent.setup> = userEvent.setup()) => {
+  await user.type(screen.getAllByPlaceholderText("••••••")[0], "12345678");
+  await user.type(screen.getAllByPlaceholderText("••••••")[1], "12345678");
+  await user.click(screen.getByRole("checkbox"));
+  await user.click(screen.getByRole("button", { name: /Criar Conta/i }));
+};
+
 /* - Testando o título - */
 
 test("should render a title with the text 'Criar Conta'", () => {
@@ -121,9 +124,7 @@ test("should render a title with the text 'Criar Conta'", () => {
 test("should render a subtitle with the text 'Comece a revisar seu código agora mesmo.'", () => {
   renderComponent();
 
-  expect(
-    screen.getByText("Comece a revisar seu código agora mesmo."),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Comece a revisar seu código agora mesmo.")).toBeInTheDocument();
 });
 
 /* - Testando os inputs - */
@@ -165,10 +166,7 @@ test("should render the 'Email' input and call setEmail when the user types on i
 
   renderComponent();
 
-  await userEvent.type(
-    screen.getByPlaceholderText("seu@email.com"),
-    "john@email.com",
-  );
+  await userEvent.type(screen.getByPlaceholderText("seu@email.com"), "john@email.com");
 
   expect(setEmail).toHaveBeenCalled();
 });
@@ -219,9 +217,7 @@ test("should enable submit button when terms are accepted", async () => {
 
   await userEvent.click(screen.getByRole("checkbox"));
 
-  expect(
-    screen.getByRole("button", { name: /Criar Conta/i }),
-  ).not.toBeDisabled();
+  expect(screen.getByRole("button", { name: /Criar Conta/i })).not.toBeDisabled();
 });
 
 /* - Testando se há campos vazios - */
@@ -245,9 +241,7 @@ test("should show error when password is too short", async () => {
   await userEvent.click(screen.getByRole("checkbox"));
   await userEvent.click(screen.getByRole("button", { name: /Criar Conta/i }));
 
-  expect(
-    screen.getByText("A senha deve ter no mínimo 8 caracteres."),
-  ).toBeInTheDocument();
+  expect(screen.getByText("A senha deve ter no mínimo 8 caracteres.")).toBeInTheDocument();
 });
 
 /* - Testando se as senhas coincidem - */
@@ -276,24 +270,205 @@ test("should call supabase.auth.signUp with correct data on submit", async () =>
   expect(supabase.auth.signUp).toHaveBeenCalledWith({
     email: "john@email.com",
     password: "12345678",
+    options: {
+      emailRedirectTo: window.location.origin,
+      data: { name: "John Doe" },
+    },
   });
 });
 
-/* - Testando a chamada ao createUser no cadastro - */
-
-test("should call createUser with correct data on successful signup", async () => {
-  renderComponentWithFilledContext();
-
-  await userEvent.type(screen.getAllByPlaceholderText("••••••")[0], "12345678");
-  await userEvent.type(screen.getAllByPlaceholderText("••••••")[1], "12345678");
-  await userEvent.click(screen.getByRole("checkbox"));
-  await userEvent.click(screen.getByRole("button", { name: /Criar Conta/i }));
-
-  expect(createUser).toHaveBeenCalledWith({
-    name: "John Doe",
+test("should trim the name before sending it to supabase", async () => {
+  vi.mocked(useAuthenticationContext).mockReturnValue({
+    name: "John Doe ",
+    setName: vi.fn(),
     email: "john@email.com",
-    user_id: "123",
+    setEmail: vi.fn(),
+    photo: null,
+    setPhoto: vi.fn(),
+    userId: null,
+    setUserId: vi.fn(),
+    clearContextData: vi.fn(),
   });
+
+  renderComponent();
+  await fillAndSubmit();
+
+  expect(supabase.auth.signUp).toHaveBeenCalledWith(
+    expect.objectContaining({
+      options: expect.objectContaining({ data: { name: "John Doe" } }),
+    }),
+  );
+});
+
+/* - Testando o estado de carregamento do botão - */
+
+test("should show 'Criando conta...' and disable the button while submitting", async () => {
+  vi.mocked(supabase.auth.signUp).mockImplementationOnce(() => new Promise(() => {}) as never);
+
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(screen.getByRole("button", { name: "Criando conta..." })).toBeDisabled();
+});
+
+/* - Testando a tela de confirmação de e-mail - */
+
+test("should show the email confirmation screen after a successful signup", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(await screen.findByTestId("email-confirmation")).toBeInTheDocument();
+  expect(screen.getByText("Confirme seu e-mail")).toBeInTheDocument();
+  expect(screen.getByText("john@email.com")).toBeInTheDocument();
+});
+
+test("should hide the signup form after a successful signup", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  await screen.findByTestId("email-confirmation");
+
+  expect(screen.queryByTestId("create-account-title")).not.toBeInTheDocument();
+  expect(screen.queryByPlaceholderText("Seu Nome")).not.toBeInTheDocument();
+});
+
+test("should not redirect to the home page after a successful signup", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  await screen.findByTestId("email-confirmation");
+
+  expect(screen.queryByText("Home")).not.toBeInTheDocument();
+});
+
+test("should tell the user to check the spam folder", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(await screen.findByText(/caixa de spam/i)).toBeInTheDocument();
+});
+
+test("should redirect to the home page upon clicking 'Já confirmei, ir para o login'", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  await userEvent.click(await screen.findByText("Já confirmei, ir para o login"));
+
+  expect(screen.getByText("Home")).toBeInTheDocument();
+});
+
+/* - Testando os erros do cadastro - */
+
+test("should show the supabase error and not the confirmation screen when signup fails", async () => {
+  vi.mocked(supabase.auth.signUp).mockResolvedValueOnce({
+    data: { user: null, session: null },
+    error: { message: "User already registered" },
+  } as never);
+
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(await screen.findByText("User already registered")).toBeInTheDocument();
+  expect(screen.queryByTestId("email-confirmation")).not.toBeInTheDocument();
+});
+
+test("should show a generic error when signUp throws", async () => {
+  vi.mocked(supabase.auth.signUp).mockRejectedValueOnce(new Error("network"));
+
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(await screen.findByText("Não foi possível criar a conta. Tente novamente.")).toBeInTheDocument();
+  expect(screen.queryByTestId("email-confirmation")).not.toBeInTheDocument();
+});
+
+/* - Testando o reenvio do e-mail de confirmação - */
+
+test("should disable the resend button with a countdown right after signup", async () => {
+  renderComponentWithFilledContext();
+  await fillAndSubmit();
+
+  expect(await screen.findByRole("button", { name: "Reenviar e-mail em 60s" })).toBeDisabled();
+});
+
+test("should enable the resend button after the 60s cooldown", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+
+  try {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    renderComponentWithFilledContext();
+    await fillAndSubmit(user);
+    await screen.findByTestId("email-confirmation");
+
+    for (let i = 0; i < 60; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    expect(screen.getByRole("button", { name: "Reenviar e-mail" })).toBeEnabled();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("should call supabase.auth.resend and show a success message", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+
+  try {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    renderComponentWithFilledContext();
+    await fillAndSubmit(user);
+    await screen.findByTestId("email-confirmation");
+
+    for (let i = 0; i < 60; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    await user.click(screen.getByRole("button", { name: "Reenviar e-mail" }));
+
+    expect(supabase.auth.resend).toHaveBeenCalledWith({
+      type: "signup",
+      email: "john@email.com",
+      options: { emailRedirectTo: window.location.origin },
+    });
+    expect(await screen.findByText("E-mail reenviado!")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("should show the error message when resending the email fails", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+
+  try {
+    vi.mocked(supabase.auth.resend).mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: { message: "email rate limit exceeded" },
+    } as never);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    renderComponentWithFilledContext();
+    await fillAndSubmit(user);
+    await screen.findByTestId("email-confirmation");
+
+    for (let i = 0; i < 60; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    await user.click(screen.getByRole("button", { name: "Reenviar e-mail" }));
+
+    expect(await screen.findByText("email rate limit exceeded")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 /* - Testando o link para página de login - */
